@@ -1,0 +1,29 @@
+source:
+  name: "uniswap_v3_subgraph"
+  endpoint_env_var: "UNISWAP_V3_SUBGRAPH_URL"
+
+ingestion:
+  entity: "swaps"
+  page_size: 1000
+  max_pages: 50
+  request_timeout_seconds: 30
+  retry_attempts: 3
+  retry_backoff_seconds: 2
+  order_direction: "asc"
+
+pools:
+  selected:
+    - name: "USDC-WETH-0.05"
+      address: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
+
+time_range:
+  start_timestamp: 1704067200   # 2024-01-01 00:00:00 UTC
+  end_timestamp: 1706745600     # 2024-02-01 00:00:00 UTC
+
+output:
+  raw_swaps_dir: "data/raw/swaps"
+  metadata_dir: "data/raw/metadata"
+
+storage:
+  raw_format: "parquet"
+  write_json_snapshot: true
