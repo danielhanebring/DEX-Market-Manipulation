@@ -1,7 +1,7 @@
 {
   "pool_name": "USDC-WETH-0.05",
   "pool_address": "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
-  "record_count": 50000,
+  "record_count": 187372,
   "sample_records": [
     {
       "swap_id": "0x32c6931329b9efa707040ebe09c4bed8295acb02ef01d26a10545516f8c386e6#5989286",

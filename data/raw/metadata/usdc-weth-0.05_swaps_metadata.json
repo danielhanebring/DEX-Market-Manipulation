@@ -1,10 +1,10 @@
 {
   "source_name": "uniswap_v3_subgraph",
-  "extracted_at_utc": "2026-03-27T10:09:12.887642+00:00",
+  "extracted_at_utc": "2026-03-27T10:26:36.972095+00:00",
   "pool_name": "USDC-WETH-0.05",
   "pool_address": "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
   "start_timestamp": 1704067200,
   "end_timestamp": 1706745600,
   "page_size": 1000,
-  "total_records": 50000
+  "total_records": 187372
 }

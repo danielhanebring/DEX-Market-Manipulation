@@ -5,7 +5,7 @@ source:
 ingestion:
   entity: "swaps"
   page_size: 1000
-  max_pages: 50
+  max_pages: 500
   request_timeout_seconds: 30
   retry_attempts: 3
   retry_backoff_seconds: 2
@@ -23,6 +23,7 @@ time_range:
 output:
   raw_swaps_dir: "data/raw/swaps"
   metadata_dir: "data/raw/metadata"
+  processed_swaps_file: "data/processed/swaps_clean.parquet"
 
 storage:
   raw_format: "parquet"
