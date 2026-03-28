@@ -4,3 +4,4 @@ requests>=2.31.0
 PyYAML>=6.0.1
 python-dotenv>=1.0.1
 tenacity>=8.2.3
+scikit-learn>=1.4.0
