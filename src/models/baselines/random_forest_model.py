@@ -44,6 +44,29 @@ DEFAULT_RANDOM_FOREST_FEATURE_COLUMNS = [
     "abs_tick_change",
     "relative_sqrt_price_change",
     "burst_activity_flag",
+    "position_in_block",
+    "block_event_count",
+    "same_sender_before_after_flag",
+    "different_middle_sender_from_neighbors_flag",
+    "same_origin_before_after_flag",
+    "tick_change_before",
+    "tick_change_after",
+    "reversal_pattern_flag",
+    "three_event_pattern_indicator",
+    "swap_size_token0_relative_to_block_mean",
+    "swap_size_token1_relative_to_block_mean",
+    "combined_reversal_magnitude",
+    "relative_trade_size_token0",
+    "attacker_vs_victim_size_ratio_token0",
+    "relative_trade_size_token1",
+    "attacker_vs_victim_size_ratio_token1",
+    "gas_price_relative_to_block_mean",
+    "gas_price_relative_to_block_median",
+    "gas_price_relative_to_neighbors_mean",
+    "high_block_gas_context_flag",
+    "high_relative_trade_size_flag",
+    "strict_sandwich_support_flag",
+    "sandwich_support_score",
 ]
 
 
@@ -128,7 +151,7 @@ def train_random_forest_model(
     random_state: int = 42,
 ) -> RandomForestArtifacts:
     """
-    Train and evaluate a Random Forest classifier on event-level sandwich labels.
+    Train and evaluate a Random Forest classifier
     """
     selected_feature_columns = feature_columns or [
         column
@@ -139,11 +162,12 @@ def train_random_forest_model(
     train_df, validation_df, test_df = time_split_for_random_forest(dataset_df)
 
     model = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=None,
-        min_samples_split=10,
-        min_samples_leaf=4,
-        class_weight="balanced",
+        n_estimators=500,
+        max_depth=12,
+        min_samples_split=20,
+        min_samples_leaf=5,
+        max_features="sqrt",
+        class_weight="balanced_subsample",
         random_state=random_state,
         n_jobs=-1,
     )
@@ -153,16 +177,24 @@ def train_random_forest_model(
         train_df["binary_target"],
     )
 
+    best_threshold, threshold_table = select_best_threshold(
+        model=model,
+        dataframe=validation_df,
+        feature_columns=selected_feature_columns,
+    )
+
     validation_metrics = evaluate_random_forest_model(
         model=model,
         dataframe=validation_df,
         feature_columns=selected_feature_columns,
+        threshold=best_threshold,
     )
 
     test_metrics = evaluate_random_forest_model(
         model=model,
         dataframe=test_df,
         feature_columns=selected_feature_columns,
+        threshold=best_threshold,
     )
 
     feature_importance_table = pd.DataFrame(
@@ -172,14 +204,23 @@ def train_random_forest_model(
         }
     ).sort_values("importance", ascending=False).reset_index(drop=True)
 
+    feature_importance_table["feature_version"] = "v2_sandwich_detection"
+
     return RandomForestArtifacts(
         model=model,
         feature_columns=selected_feature_columns,
         train_size=len(train_df),
         validation_size=len(validation_df),
         test_size=len(test_df),
-        validation_metrics=validation_metrics,
-        test_metrics=test_metrics,
+        validation_metrics={
+            **validation_metrics,
+            "selected_threshold": best_threshold,
+            "threshold_candidates": threshold_table.to_dict(orient="records"),
+        },
+        test_metrics={
+            **test_metrics,
+            "selected_threshold": best_threshold,
+        },
         feature_importance_table=feature_importance_table,
     )
 
@@ -231,5 +272,43 @@ def generate_random_forest_predictions(
 
     prediction_df["rf_probability"] = probabilities
     prediction_df["rf_predicted_flag"] = predicted_flags
+    prediction_df["rf_threshold_used"] = threshold
 
     return prediction_df
+
+def select_best_threshold(
+    model: RandomForestClassifier,
+    dataframe: pd.DataFrame,
+    feature_columns: list[str],
+    candidate_thresholds: list[float] | None = None,
+) -> tuple[float, pd.DataFrame]:
+    """
+    Select the threshold that gives the best F1 score on validation data.
+    """
+    if candidate_thresholds is None:
+        candidate_thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+
+    x_values = dataframe[feature_columns]
+    y_true = dataframe["binary_target"]
+    y_score = model.predict_proba(x_values)[:, 1]
+
+    rows = []
+    for threshold in candidate_thresholds:
+        y_pred = (y_score >= threshold).astype(int)
+
+        rows.append(
+            {
+                "threshold": threshold,
+                "precision": precision_score(y_true, y_pred, zero_division=0),
+                "recall": recall_score(y_true, y_pred, zero_division=0),
+                "f1": f1_score(y_true, y_pred, zero_division=0),
+            }
+        )
+
+    threshold_df = pd.DataFrame(rows).sort_values(
+        ["f1", "precision", "recall"],
+        ascending=False,
+    ).reset_index(drop=True)
+
+    best_threshold = float(threshold_df.iloc[0]["threshold"])
+    return best_threshold, threshold_df

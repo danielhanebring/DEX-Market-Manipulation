@@ -59,11 +59,14 @@ def main() -> None:
     logger.info("Validation metrics: %s", artifacts.validation_metrics)
     logger.info("Test metrics: %s", artifacts.test_metrics)
 
+    selected_threshold = float(artifacts.validation_metrics["selected_threshold"])
+
     train_df, validation_df, test_df = time_split_for_random_forest(dataset_df)
     test_predictions_df = generate_random_forest_predictions(
         model=artifacts.model,
         dataframe=test_df,
         feature_columns=artifacts.feature_columns,
+        threshold=selected_threshold,
     )
 
     joblib.dump(artifacts.model, model_output_path)
@@ -78,6 +81,7 @@ def main() -> None:
         "test_size": artifacts.test_size,
         "validation_metrics": artifacts.validation_metrics,
         "test_metrics": artifacts.test_metrics,
+        "feature_version": "v2_sandwich_detection",
         "dataset_notes": {
             "positive_class": "weak_anomaly",
             "negative_class": "normal",
