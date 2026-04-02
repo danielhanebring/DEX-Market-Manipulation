@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score
@@ -49,8 +50,7 @@ def train_isolation_forest_model(
     contamination: float = 0.01,
 ) -> IsolationForestArtifacts:
     """
-    Train Isolation Forest on normal training events only.
-
+    Train Isolation Forest on normal training events only.Isol
     """
     selected_feature_columns = feature_columns or [
         column
@@ -65,24 +65,35 @@ def train_isolation_forest_model(
         raise ValueError("No normal training rows available for Isolation Forest.")
 
     model = IsolationForest(
-        n_estimators=300,
+        n_estimators=400,
+        max_samples="auto",
         contamination=contamination,
+        max_features=0.8,
         random_state=random_state,
         n_jobs=-1,
     )
 
     model.fit(normal_train_df[selected_feature_columns])
 
+    validation_scores = -model.decision_function(validation_df[selected_feature_columns])
+
+    best_threshold = select_best_if_threshold(
+        scores=validation_scores,
+        y_true=validation_df["binary_target"],
+    )
+
     validation_metrics = evaluate_isolation_forest_model(
         model=model,
         dataframe=validation_df,
         feature_columns=selected_feature_columns,
+        threshold=best_threshold,
     )
 
     test_metrics = evaluate_isolation_forest_model(
         model=model,
         dataframe=test_df,
         feature_columns=selected_feature_columns,
+        threshold=best_threshold,
     )
 
     return IsolationForestArtifacts(
@@ -91,8 +102,14 @@ def train_isolation_forest_model(
         train_size=len(normal_train_df),
         validation_size=len(validation_df),
         test_size=len(test_df),
-        validation_metrics=validation_metrics,
-        test_metrics=test_metrics,
+        validation_metrics={
+            **validation_metrics,
+            "selected_threshold": float(best_threshold),
+        },
+        test_metrics={
+            **test_metrics,
+            "selected_threshold": float(best_threshold),
+        },
     )
 
 
@@ -100,6 +117,7 @@ def evaluate_isolation_forest_model(
     model: IsolationForest,
     dataframe: pd.DataFrame,
     feature_columns: list[str],
+    threshold: float,
 ) -> dict[str, Any]:
     if dataframe.empty:
         return {"error": "Empty dataset split."}
@@ -107,17 +125,14 @@ def evaluate_isolation_forest_model(
     x_values = dataframe[feature_columns]
     y_true = dataframe["binary_target"]
 
-    raw_predictions = model.predict(x_values)
-    anomaly_flags = (raw_predictions == -1).astype(int)
-
-    # More abnormal = lower decision score, so invert for PR-AUC
-    decision_scores = -model.decision_function(x_values)
+    anomaly_scores = -model.decision_function(x_values)
+    anomaly_flags = (anomaly_scores >= threshold).astype(int)
 
     metrics = {
         "precision": precision_score(y_true, anomaly_flags, zero_division=0),
         "recall": recall_score(y_true, anomaly_flags, zero_division=0),
         "f1": f1_score(y_true, anomaly_flags, zero_division=0),
-        "pr_auc": average_precision_score(y_true, decision_scores) if len(set(y_true)) > 1 else None,
+        "pr_auc": average_precision_score(y_true, anomaly_scores) if len(set(y_true)) > 1 else None,
         "support": int(len(y_true)),
         "positive_rate": float(y_true.mean()) if len(y_true) > 0 else None,
         "predicted_positive_rate": float(anomaly_flags.mean()) if len(anomaly_flags) > 0 else None,
@@ -130,17 +145,38 @@ def generate_isolation_forest_predictions(
     model: IsolationForest,
     dataframe: pd.DataFrame,
     feature_columns: list[str],
+    threshold: float,
 ) -> pd.DataFrame:
     """
     Generate anomaly predictions for a dataframe split.
     """
     prediction_df = dataframe[["swap_id", "timestamp", "label_class", "binary_target"]].copy()
 
-    raw_predictions = model.predict(dataframe[feature_columns])
-    anomaly_flags = (raw_predictions == -1).astype(int)
     anomaly_scores = -model.decision_function(dataframe[feature_columns])
+    anomaly_flags = (anomaly_scores >= threshold).astype(int)
 
     prediction_df["if_anomaly_score"] = anomaly_scores
     prediction_df["if_predicted_flag"] = anomaly_flags
+    prediction_df["if_threshold_used"] = threshold
 
     return prediction_df
+
+def select_best_if_threshold(scores, y_true):
+    """
+    Select threshold that maximizes F1 on validation set.
+    """
+    thresholds = np.linspace(scores.min(), scores.max(), 20)
+
+    best_f1 = 0.0
+    best_threshold = thresholds[0]
+
+    for t in thresholds:
+        y_pred = (scores >= t).astype(int)
+
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_threshold = t
+
+    return best_threshold

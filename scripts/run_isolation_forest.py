@@ -62,11 +62,14 @@ def main() -> None:
     logger.info("Validation metrics: %s", artifacts.validation_metrics)
     logger.info("Test metrics: %s", artifacts.test_metrics)
 
+    selected_threshold = float(artifacts.validation_metrics["selected_threshold"])
+
     _, _, test_df = time_split_for_random_forest(dataset_df)
     test_predictions_df = generate_isolation_forest_predictions(
         model=artifacts.model,
         dataframe=test_df,
         feature_columns=artifacts.feature_columns,
+        threshold=selected_threshold,
     )
 
     joblib.dump(artifacts.model, model_output_path)
