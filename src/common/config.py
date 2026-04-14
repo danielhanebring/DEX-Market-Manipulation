@@ -4,11 +4,12 @@ import os
 from pathlib import Path
 from typing import Any
 
-import yaml
-from dotenv import load_dotenv
-
-
 def load_environment() -> None:
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+
     load_dotenv()
 
 
@@ -16,6 +17,14 @@ def load_yaml_config(config_path: str | Path) -> dict[str, Any]:
     """
     Takes path to YAML file and returns YAML content parsed as dictionary
     """
+    try:
+        import yaml 
+    except ImportError as exc:
+        raise ImportError(
+            "PyYAML is required to load YAML config files"
+            "or pip install -r requirements.txt"
+        ) from exc
+
     path = Path(config_path)
     if not path.exists():
         raise FileNotFoundError(f"Config file does not exist: {path}")
