@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score, f1_score, precision_score, recall_score
 
+from src.models.baselines.feature_sets import NO_LEAKAGE_FEATURES_TO_DROP, drop_features
 
 @dataclass
 class RandomForestArtifacts:
@@ -68,6 +69,12 @@ DEFAULT_RANDOM_FOREST_FEATURE_COLUMNS = [
     "strict_sandwich_support_flag",
     "sandwich_support_score",
 ]
+
+# Feature set used for the no_leakage run (drops rule-like features).
+NO_LEAKAGE_RANDOM_FOREST_FEATURE_COLUMNS = drop_features(
+    DEFAULT_RANDOM_FOREST_FEATURE_COLUMNS,
+    NO_LEAKAGE_FEATURES_TO_DROP,
+)
 
 
 def prepare_random_forest_dataset(

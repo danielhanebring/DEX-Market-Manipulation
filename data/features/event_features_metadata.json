@@ -94,10 +94,5 @@
     "high_relative_trade_size_flag",
     "strict_sandwich_support_flag",
     "sandwich_support_score"
-  ],
-  "notes": [
-    "Sandwich-specific features added",
-    "Strict three-event helper features included",
-    "Block-relative gas and trade-size features included"
   ]
 }

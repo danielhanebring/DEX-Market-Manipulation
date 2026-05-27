@@ -411,7 +411,7 @@ def _map_label_confidence(
     suspicious_gas_pattern_flag: int,
 ) -> str:
     """
-    Assign confidence level to heuristic labels.
+    Set confidence for rule labels.
     """
     if label_class == "weak_anomaly":
         if heuristic_score >= 4 or suspicious_gas_pattern_flag == 1:

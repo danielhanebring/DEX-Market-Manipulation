@@ -70,7 +70,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
             "Key constraint implemented here:\n"
             "- We do NOT run 3-swap sandwich detection rules on the Jared dataset.\n"
             "- We do NOT pre-label Jared data. We only filter by bot address presence.\n"
-            "- We also train a model that excludes explicit sandwich-signature features to reduce circularity.\n"
+            "- We also train a model that drops rule-like features (no_leakage).\n"
             "\n"
             "Outputs ranked anomalies + block extracts for manual inspection.\n"
         )
@@ -106,13 +106,13 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--exclude-bot-from-train",
         action="store_true",
-        help="Exclude bot-address interactions from the weak-labeled training pool to avoid leakage.",
+        help="Exclude bot-address interactions from training.",
     )
     parser.add_argument(
         "--top-pct",
         type=float,
         default=0.01,
-        # NOTE: Avoid '%' in argparse help strings (argparse may treat it as formatting).
+        # Avoid '%' in argparse help strings.
         help="Top fraction of scored Jared events to export for manual inspection (e.g. 0.01 = top 1 percent).",
     )
     parser.add_argument(
@@ -377,7 +377,7 @@ def main(argv: list[str] | None = None) -> int:
     md_lines.append("## Model Notes")
     md_lines.append("")
     md_lines.append("- The model was trained on weak labels from `event_labels.parquet` (normal vs weak_anomaly).")
-    md_lines.append("- The feature set used here excludes explicit sandwich signature features to reduce circularity.")
+    md_lines.append("- Feature set: no_leakage (drops rule-like features).")
     md_lines.append("")
     md_lines.append("## Training Metrics (weak labels)")
     md_lines.append("")

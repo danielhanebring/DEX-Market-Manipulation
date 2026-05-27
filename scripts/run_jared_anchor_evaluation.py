@@ -359,7 +359,7 @@ def main(argv: list[str] | None = None) -> int:
     md.append("## Quick Read: What This Means")
     md.append("")
     md.append(
-        "- Victim hit rate answers: if you look only at the middle transaction (the victim proxy), does the model raise a flag?"
+        "- Victim hit rate: does the model flag the middle transaction (tx2)?"
     )
     md.append(
         "- Any-of-triple hit rate answers: if you flag any of the three swaps, do you catch the case at all (useful for triage systems)?"
@@ -448,4 +448,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

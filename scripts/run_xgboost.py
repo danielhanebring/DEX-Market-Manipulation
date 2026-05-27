@@ -17,6 +17,7 @@ from src.common.config import load_environment
 from src.common.logging_utils import setup_logging  
 from src.common.paths import PROJECT_ROOT, ensure_directory  
 from src.models.baselines.random_forest_model import time_split_for_random_forest 
+from src.models.baselines.random_forest_model import NO_LEAKAGE_RANDOM_FOREST_FEATURE_COLUMNS
 from src.models.baselines.xgboost_model import ( 
     generate_xgboost_predictions,
     prepare_xgboost_dataset,
@@ -36,15 +37,9 @@ def main() -> None:
     event_features_path = PROJECT_ROOT / "data" / "features" / "event_features.parquet"
     event_labels_path = PROJECT_ROOT / "data" / "labels" / "event_labels.parquet"
 
-    model_output_path = PROJECT_ROOT / "outputs" / "reports" / "xgboost_model.joblib"
-    metrics_output_path = PROJECT_ROOT / "outputs" / "metrics" / "xgboost_metrics.json"
-    importance_output_path = PROJECT_ROOT / "outputs" / "reports" / "xgboost_feature_importance.csv"
-    predictions_output_path = PROJECT_ROOT / "outputs" / "predictions" / "xgboost_test_predictions.parquet"
-
-    ensure_directory(model_output_path.parent)
-    ensure_directory(metrics_output_path.parent)
-    ensure_directory(importance_output_path.parent)
-    ensure_directory(predictions_output_path.parent)
+    ensure_directory((PROJECT_ROOT / "outputs" / "reports"))
+    ensure_directory((PROJECT_ROOT / "outputs" / "metrics"))
+    ensure_directory((PROJECT_ROOT / "outputs" / "predictions"))
 
     logger.info("Loading event features from: %s", event_features_path)
     event_features_df = pd.read_parquet(event_features_path)
@@ -63,52 +58,69 @@ def main() -> None:
         dataset_df["binary_target"].value_counts(dropna=False).to_string(),
     )
 
-    artifacts = train_xgboost_model(dataset_df=dataset_df)
-    logger.info("Validation metrics: %s", artifacts.validation_metrics)
-    logger.info("Test metrics: %s", artifacts.test_metrics)
+    def _run_one(*, name: str, feature_columns: list[str] | None, legacy_outputs: bool = False) -> None:
+        logger.info("=== XGBoost run: %s ===", name)
 
-    selected_threshold = float(artifacts.validation_metrics["selected_threshold"])
+        if legacy_outputs:
+            model_output_path = PROJECT_ROOT / "outputs" / "reports" / "xgboost_model.joblib"
+            metrics_output_path = PROJECT_ROOT / "outputs" / "metrics" / "xgboost_metrics.json"
+            importance_output_path = PROJECT_ROOT / "outputs" / "reports" / "xgboost_feature_importance.csv"
+            predictions_output_path = PROJECT_ROOT / "outputs" / "predictions" / "xgboost_test_predictions.parquet"
+        else:
+            model_output_path = PROJECT_ROOT / "outputs" / "reports" / f"xgboost_model_{name}.joblib"
+            metrics_output_path = PROJECT_ROOT / "outputs" / "metrics" / f"xgboost_metrics_{name}.json"
+            importance_output_path = PROJECT_ROOT / "outputs" / "reports" / f"xgboost_feature_importance_{name}.csv"
+            predictions_output_path = PROJECT_ROOT / "outputs" / "predictions" / f"xgboost_test_predictions_{name}.parquet"
 
-    _, _, test_df = time_split_for_random_forest(dataset_df)
-    test_predictions_df = generate_xgboost_predictions(
-        model=artifacts.model,
-        dataframe=test_df,
-        feature_columns=artifacts.feature_columns,
-        threshold=selected_threshold,
-    )
+        artifacts = train_xgboost_model(dataset_df=dataset_df, feature_columns=feature_columns)
+        logger.info("Validation metrics: %s", artifacts.validation_metrics)
+        logger.info("Test metrics: %s", artifacts.test_metrics)
 
-    joblib.dump(artifacts.model, model_output_path)
-    artifacts.feature_importance_table.to_csv(importance_output_path, index=False)
-    test_predictions_df.to_parquet(predictions_output_path, index=False)
+        selected_threshold = float(artifacts.validation_metrics["selected_threshold"])
 
-    metrics_payload = {
-        "model": "xgboost_event_classifier",
-        "feature_columns": artifacts.feature_columns,
-        "train_size": artifacts.train_size,
-        "validation_size": artifacts.validation_size,
-        "test_size": artifacts.test_size,
-        "validation_metrics": artifacts.validation_metrics,
-        "test_metrics": artifacts.test_metrics,
-        "feature_version": "v2_sandwich_detection",
-        "dataset_notes": {
-            "positive_class": "weak_anomaly",
-            "negative_class": "normal",
-            "excluded_class": "suspicious",
-            "split_strategy": "time_based",
-            "tree_method": "hist",
-            "early_stopping": True,
-        },
-    }
+        _, _, test_df = time_split_for_random_forest(dataset_df)
+        test_predictions_df = generate_xgboost_predictions(
+            model=artifacts.model,
+            dataframe=test_df,
+            feature_columns=artifacts.feature_columns,
+            threshold=selected_threshold,
+        )
 
-    with metrics_output_path.open("w", encoding="utf-8") as file:
-        json.dump(metrics_payload, file, indent=2)
+        joblib.dump(artifacts.model, model_output_path)
+        artifacts.feature_importance_table.to_csv(importance_output_path, index=False)
+        test_predictions_df.to_parquet(predictions_output_path, index=False)
 
-    logger.info("Saved XGBoost model to: %s", model_output_path)
-    logger.info("Saved metrics to: %s", metrics_output_path)
-    logger.info("Saved feature importance to: %s", importance_output_path)
-    logger.info("Saved test predictions to: %s", predictions_output_path)
+        metrics_payload = {
+            "model": "xgboost_event_classifier",
+            "experiment": name,
+            "feature_columns": artifacts.feature_columns,
+            "train_size": artifacts.train_size,
+            "validation_size": artifacts.validation_size,
+            "test_size": artifacts.test_size,
+            "validation_metrics": artifacts.validation_metrics,
+            "test_metrics": artifacts.test_metrics,
+            "feature_version": "v2_sandwich_detection",
+            "dataset_notes": {
+                "positive_class": "weak_anomaly",
+                "negative_class": "normal",
+                "excluded_class": "suspicious",
+                "split_strategy": "time_based",
+                "tree_method": "hist",
+                "early_stopping": True,
+            },
+        }
+
+        with metrics_output_path.open("w", encoding="utf-8") as file:
+            json.dump(metrics_payload, file, indent=2)
+
+        logger.info("Saved XGBoost model to: %s", model_output_path)
+        logger.info("Saved metrics to: %s", metrics_output_path)
+        logger.info("Saved feature importance to: %s", importance_output_path)
+        logger.info("Saved test predictions to: %s", predictions_output_path)
+
+    _run_one(name="full", feature_columns=None, legacy_outputs=True)
+    _run_one(name="no_leakage", feature_columns=NO_LEAKAGE_RANDOM_FOREST_FEATURE_COLUMNS)
 
 
 if __name__ == "__main__":
     main()
-

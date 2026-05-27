@@ -124,8 +124,8 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Fill a Jared manual review template using the exported block-context parquet.\n"
-            "This is a first-pass helper: it adds sandwich/reversal/gas_spike booleans + a preliminary verdict.\n"
-            "You can (and should) override after human inspection."
+            "Adds simple flags and a draft verdict.\n"
+            "Review and edit the result manually."
         )
     )
     parser.add_argument(
@@ -140,7 +140,8 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--out-csv",
-        default=str(Path("outputs") / "reports" / "jared_manual_review_filled_by_codex.csv"),
+        # Neutral name: this file is produced by an automated helper (not manual ground truth).
+        default=str(Path("outputs") / "reports" / "jared_manual_review_filled_auto.csv"),
         help="Output CSV path for the filled review sheet.",
     )
     parser.add_argument(

@@ -15,11 +15,14 @@ def predict_lstm_probabilities(
     target_column: str = "target_contains_weak_anomaly",
     batch_size: int = 128,
     device: str | None = None,
+    threshold: float = 0.5,
+    mean: np.ndarray | None = None,
+    std: np.ndarray | None = None,
 ) -> pd.DataFrame:
     """
     Generate sequence level probabilities from a trained LSTM model.
     """
-    dataset = SequenceDataset(dataframe, target_column=target_column)
+    dataset = SequenceDataset(dataframe, target_column=target_column, mean=mean, std=std)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
     resolved_device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -36,6 +39,7 @@ def predict_lstm_probabilities(
 
     prediction_df = dataset.dataframe.copy()
     prediction_df["lstm_probability"] = np.asarray(probabilities, dtype=np.float32)
-    prediction_df["lstm_predicted_flag"] = (prediction_df["lstm_probability"] >= 0.5).astype(int)
+    prediction_df["lstm_predicted_flag"] = (prediction_df["lstm_probability"] >= float(threshold)).astype(int)
+    prediction_df["lstm_threshold"] = float(threshold)
 
     return prediction_df

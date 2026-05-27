@@ -5,3 +5,17 @@ __pycache__/
 .mypy_cache/
 .ipynb_checkpoints/
 outputs/
+
+# ---- Derived data artifacts (keep core datasets tracked; ignore extra variants) ----
+data/features/sequence_features_L*.parquet
+data/labels/economic_anchor_cases.parquet
+
+# ---- One-off analysis / report generation helpers (avoid committing these) ----
+scripts/generate_*.py
+scripts/extract_thesis_pdf_text.py
+scripts/print_feature_columns.py
+scripts/build_sequence_feature_variants.py
+scripts/hello.py
+
+# ---- Thesis working directory and generated assets ----
+thesis/

@@ -18,9 +18,14 @@ class SequenceDataset(Dataset):
         self,
         dataframe: pd.DataFrame,
         target_column: str = "target_contains_weak_anomaly",
+        *,
+        mean: np.ndarray | None = None,
+        std: np.ndarray | None = None,
     ) -> None:
         self.dataframe = dataframe.reset_index(drop=True)
         self.target_column = target_column
+        self.mean = mean
+        self.std = std
 
         if target_column not in self.dataframe.columns:
             raise ValueError(f"Missing target column: {target_column}")
@@ -38,6 +43,10 @@ class SequenceDataset(Dataset):
 
         sequence_features = row["sequence_features"]
         sequence_array = _coerce_sequence_to_float32_array(sequence_features)
+
+        if self.mean is not None and self.std is not None:
+            eps = np.float32(1e-8)
+            sequence_array = (sequence_array - self.mean) / (self.std + eps)
 
         if sequence_array.ndim != 2:
             raise ValueError(
@@ -92,3 +101,28 @@ def _coerce_sequence_to_float32_array(sequence_features: Any) -> np.ndarray:
     raise ValueError(
         f"Unsupported sequence_features type: {type(sequence_features)}"
     )
+
+
+def fit_sequence_mean_std(
+    dataframe: pd.DataFrame,
+    *,
+    max_sequences: int = 25000,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Fit feature-wise mean/std on a sample of sequences (flattened over timesteps).
+    Returns (mean, std) as float32 arrays of length F.
+    """
+    df = dataframe
+    if len(df) > max_sequences:
+        df = df.sample(n=max_sequences, random_state=42).reset_index(drop=True)
+
+    mats = []
+    for mat in df["sequence_features"].tolist():
+        arr = _coerce_sequence_to_float32_array(mat)
+        mats.append(arr)
+
+    big = np.concatenate(mats, axis=0)  # [N*L, F]
+    mean = big.mean(axis=0).astype(np.float32)
+    std = big.std(axis=0).astype(np.float32)
+    std = np.where(std <= 1e-8, 1.0, std).astype(np.float32)
+    return mean, std

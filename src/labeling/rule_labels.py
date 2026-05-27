@@ -5,7 +5,7 @@ import pandas as pd
 
 def assign_rule_based_labels(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
-    Assign weak labels and confidence from heuristic flags.
+    Assign weak labels from rule flags.
     Examples:
     - normal
     - suspicious

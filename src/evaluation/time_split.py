@@ -8,7 +8,7 @@ def time_based_split(
     train_ratio: float = 0.7,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Split dataset based on time. This is important because we are working with time based ata
+    Split a dataset by time (chronological split).
     """
     df = dataframe.sort_values("timestamp").reset_index(drop=True)
 

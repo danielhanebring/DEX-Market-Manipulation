@@ -5,7 +5,7 @@ import pandas as pd
 
 def build_rule_based_predictions(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
-    Simple baseline prediction table from heuristic rule scores
+    Simple baseline predictions from rule scores.
     """
     df = dataframe.copy()
 

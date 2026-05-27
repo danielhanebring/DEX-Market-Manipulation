@@ -15,7 +15,7 @@ class SandwichCase:
     """
     One detected 3-swap sandwich-like sequence attributed to a known bot address.
 
-    This is a *pattern* dataset, not proof of malicious intent.
+    This is a pattern dataset (not proof of intent).
     """
 
     sequence_id: str

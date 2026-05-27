@@ -304,9 +304,9 @@ def main(argv: list[str] | None = None) -> int:
         md_lines.append("- Gas columns not available in the cases dataset.")
     md_lines.append("")
 
-    md_lines.append("## Step C: Profit Proxy (Heuristic)")
+    md_lines.append("## Step C: Profit Estimate (Simple)")
     md_lines.append("")
-    md_lines.append("We report a proxy that emphasizes round-trip structure: large reversal magnitude with small net displacement.")
+    md_lines.append("We report a simple estimate based on round-trip structure: big reversal with small net move.")
     md_lines.append("")
     if profit_summary is not None:
         md_lines.append("`profit_proxy` summary:")
@@ -315,7 +315,7 @@ def main(argv: list[str] | None = None) -> int:
         md_lines.append(profit_summary.to_string())
         md_lines.append("```")
     else:
-        md_lines.append("Profit proxy not available (missing columns).")
+        md_lines.append("Profit estimate not available (missing columns).")
     md_lines.append("")
 
     md_lines.append("## Step D: Compare With Normal Trades (Feature-Level)")

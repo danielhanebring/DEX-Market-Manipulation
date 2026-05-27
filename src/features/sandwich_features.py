@@ -7,7 +7,7 @@ import pandas as pd
 
 def add_sandwich_features(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
-    Sandwich features used as support classification, anomaly scoring, heuristic labeling
+    Create sandwich-related features.
     """
     required_columns = [
         "swap_id",

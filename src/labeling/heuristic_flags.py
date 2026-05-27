@@ -5,9 +5,7 @@ import pandas as pd
 
 def add_heuristic_flags(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
-    Add heuristic flags used for weak labeling.
-
-    These are not final labels. They are support signals.
+    Add simple rule flags used for weak labels.
     """
     df = dataframe.copy()
 

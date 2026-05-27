@@ -17,8 +17,8 @@ pools:
       address: "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
 
 time_range:
-  start_timestamp: 1704067200   # 2024-01-01 00:00:00 UTC
-  end_timestamp: 1706745600     # 2024-02-01 00:00:00 UTC
+  start_timestamp: 1704067200 
+  end_timestamp: 1706745600    
 
 output:
   raw_swaps_dir: "data/raw/swaps"
