@@ -1,0 +1,2800 @@
+﻿Daniel Hanebring Machine Learning Based Detection of Sandwich-Like Behavior in Uniswap V3
+ Logo, company name
+
+Description automatically generated 
+
+Mälardalens universitet
+Teknisk och hälsovetenskaplig fakultet
+Institutionen för datavetenskap och datateknik
+Västerås, Sweden
+DVA331 15hp
+
+
+
+
+
+
+
+
+
+
+Machine Learning Based Detection of Sandwich-Like Behavior in Decentralized Exchanges
+
+
+
+
+
+
+Daniel Hanebring
+dhg23003@student.mdu.se
+
+
+
+
+
+
+Examinator:         Elmeri Syrjänen
+        Mälardalens Universitet, Västerås, Sweden
+ 
+
+Handledare:         Ivan Tomasic
+        Mälardalens Universitet, Västerås, Sweden
+
+
+
+
+
+
+
+
+
+
+2026-05-27
+Abstract
+Decentralized exchanges (DEX) and automated market makers (AMM) have become a central part of the modern blockchain ecosystem. At the same time the emergence of Maximal Extractable Value (MEV) has created new forms of strategic trading behavior where actors can exploit the transactional order in the blockchain. One of the most noticed phenomena is sandwich attacks, where a users swap is surrounded by transactions that try to affect the price movement to the attackers advantage. The problem is difficult to analyse because public blockchain data misses clear ground truth and because similar patterns also can occur in legit trading or arbitrage.
+
+
+The purpose of this work is to examine how sandwich-like behavior can be identified in public Uniswap V3 data through a combination of heuristic rules and machine learning. The work focuses on constructing weak labels from observed block and transaction patterns and evaluating how different models can be used to rank deviating behaviors. 
+
+
+To implement this study swap data from Uniswap V3 were collected and processed. Features that were connected to price movement, block context, trade size, gas and sequential patterns were created. Multiple models were trained and compared, including Random Forest, XGBoost, Logistic Regression and Isolation Forest.
+
+
+The results show that tree based models perform the best and can identify stable structures connected to sandwich-like behaviors even when explicit rule based features were removed. The analysis also shows that the models do not only reproduce heuristic rules but rather seem to catch more general block and sequential patterns. At the same time the results are dependent on weak labels and cannot therefore be interpreted as proof of verified attacks. The work contributes with a reproducible framework for analysing sandwich-like behaviour in public DEX-data and shows how machine learning can be used as support for anomaly detection in decentralized financial systems.
+Contents
+1. Introduction        8
+2. Background        10
+2.1 Blockchain and Ethereum        10
+2.2 Decentralized Finance (DeFi)        10
+2.3 Decentralized Exchanges (DEX)        10
+2.4 Automated Market Makers (AMM)        11
+2.5 Uniswap V3        11
+2.6 Transactionorder, gas and blockstructure        12
+2.7 Sandwich attacks and Maximal Extractable Value (MEV)        13
+2.8 Anomaly detection and machine learning methods        13
+2.9 Evaluation of machine learning models with imbalanced data        14
+2.10 Model score and score distributions        15
+2.11 Supervised and unsupervised learning        15
+2.12 Spearman correlation and ranking stability        15
+2.13 Cohen’s d and effect size analysis        15
+2.14 Weak labels and weak supervision        15
+2.15 LSTM and sequence modeling        16
+2.16 Autoencoders        16
+2.15 Reconstruction error        16
+2.15 Class imbalance handling        16
+2.16 Jaredfromsubway.eth        17
+3. Related Work        18
+4. Problem Formulation        19
+4.1 Problem Description        19
+4.2 Purpose        19
+4.3 Question        19
+4.4 Motivation        19
+4.5 Presumptions and limitations        20
+4.6 Goals        20
+5. Method        21
+5.1  Research approach        21
+5.2 Data collection        21
+5.3 Weak supervision        22
+5.4 Feature engineering        23
+5.5 Dataset summary        23
+5.6 Event level machine learning        26
+5.7 Sequence modeling        26
+5.8 LSTM        27
+5.9 LSTM v2        27
+5.10 Leakage control and ablation        29
+5.11 Experimental design        29
+5.12 Train, validation and test        30
+5.13 Evaluation        30
+5.14 External evaluation        30
+5.15 Holdout experiment with high-confident cases        31
+5.16 Threats to validity        31
+6. Ethical and Societal Considerations        33
+6.1 Research Ethical Considerations        33
+6.2 Ethical Aspects of  Method and Result        33
+6.3 Societal Aspects        33
+7. Data collection and system overview        34
+7.1 Central concepts and experimental hypothesis        34
+7.2 Data collection from Uniswap V3        34
+7.3 Preprocessing and data construction        35
+7.4 Feature engineering on event level        35
+7.5 Construction of weak labels        36
+7.6 Sequence dataset with sliding window        36
+7.7 Sequence modeling with LSTM        37
+7.8 LSTM v2 pipeline        37
+7.7 Model training and internal evaluation        40
+7.8 External evaluation with Jared and holdout experiment        40
+7.9 Manual review and block level analysis        41
+7.10 Reproducibility and artifacts        41
+8. Results        42
+8.1 Overview        42
+8.2 Dataset and class imbalance        42
+8.3 Model performance        42
+8.4 Sequence models and LSTM evaluation        43
+8.4.1 LSTM v1 - supervised sequence classification        44
+8.4.2 Effect of removing block-context features        45
+8.4.3 LSTM Autoencoder (unsupervised)        45
+8.4.4 LSTM v2 - improved sequence pipeline        46
+8.4.5 Jared sequence evaluation        48
+8.5 Score distributions        49
+8.6 Feature importance        51
+8.7 External Evaluation: Jared-dataset        52
+8.8 Stability (With vs without Jared in training)        53
+8.9 Case studies (block-level)        54
+8.9.1 Block level case studies        54
+8.9.2  Manually selected case studies        56
+8.9.3 Automatically selected high score case studies        56
+8.10 Quantitative conclusion of Jared-results        59
+8.11 Holdout-experiment with highly confident reference case        60
+8.11.1 Arrangement (leakage control)        60
+8.11.2 Result        60
+8.11.3 Limitations        61
+8.11.4 Holdout experiment without rule based features        61
+8.12 Independent unlabeled evaluation        62
+9. Discussion        63
+9.1 Interpretation of the results        63
+9.1.1 Why tree models perform better?        63
+9.1.1.1 Sequential learning and LSTM models        63
+9.1.2 Does the model only learn the rules?        64
+9.1.2.1 No-rule and no-leakage experiments        65
+9.1.3 Importance of Jared evaluation        65
+9.1.3.1 Discussion of external generalization        66
+9.2 Feature relations and structures in the data        67
+9.2.1 Which features actually separates the classes?        67
+9.2.2 Structures in anomaly cases: Class conditional correlations        68
+9.2.3 Interactions between features        72
+9.3 Challenges of Anomay detection in Uniswap V3        73
+10. Conclusions        74
+11. Future Work        77
+12. References        78
+A. Appendices        81
+A.1 Feature catalog        82
+A.2 Feature groups        88
+
+
+
+
+1. Introduction
+
+
+In recent years, decentralized finance (DeFi) has grown rapidly and become a more important part of the financial system. One central part of this area is decentralized exchanges (DEX), which allow users to trade financial assets without relying on a central exchange. Instead of traditional order books, these systems utilize smart contracts and Automated Market Makers (AMM), where liquidity is provided through shared liquidity pools. 
+ 
+One important characteristic of decentralized exchanges is that all transactions are publicly recorded on the blockchain. This transparency enables detailed analysis of trading behavior as large amounts of transaction data are openly available. However, while this openness provides opportunities for analysis, it also introduces new forms of market manipulation that differ from those found in traditional centralized markets. 
+ 
+This report is primarily aimed at students and researchers in computer science and financial technology, as well as developers and analysts interested in blockchain data analysis and machine learning. A basic understanding of programming and data processing is assumed, although advanced prior knowledge of the domain is not required. 
+ 
+Several types of market manipulation have been identified in decentralized exchanges, including front-running, wash trading, and flash loan attacks. One of the most commonly studied forms is the sandwich attack. This type of manipulation exploits the ordering of transactions within a block by placing one transaction before and another after a target transaction. By doing so, the attacker can profit from price movements caused by the original user’s trade. 
+Despite the large trading volumes handled by decentralized exchanges, there is still limited research on how such manipulations can be systematically identified using data-driven methods. Existing approaches are often rule-based and rely on simple heuristics, while the application of machine learning in this domain remains relatively underexplored. Furthermore, the lack of reliable labeled datasets makes the problem particularly challenging.
+The purpose of this thesis is to investigate how sandwich-like patterns in trading behavior can be identified using publicly available transaction data from Uniswap V3. Rather than attempting to prove the existence of actual manipulation, the focus is on detecting observable patterns that may indicate suspicious or anomalous behavior.
+The work is guided by the following research questions:
+* How can sandwich-like patterns be defined from observed transaction sequences?
+* To what extent can machine learning generalize beyond rule based signals?
+* What features in the data are most relevant to identify such behavior?
+* How does the performance differ between machine learning models in this context? 
+
+
+To answer these questions, a data analysis pipeline is developed to collect, process, and analyze historical transaction data from Uniswap V3. The approach combines heuristic labeling with both simple baseline models and more advanced machine learning methods. This methodology is chosen to ensure reproducibility, transparency, and the ability to systematically evaluate model behavior. 
+ 
+The motivation for this work stems from the increasing need for monitoring and analysis tools in decentralized financial systems. In traditional financial markets, market surveillance is a well-established practice. As decentralized systems continue to grow, it becomes increasingly important to develop corresponding analytical methods that can operate on open blockchain data. This work contributes to that effort by exploring how data analysis and machine learning can be used to identify potentially suspicious activity. 
+
+
+The results indicate that certain sandwich-like patterns can be identified using both rule-based methods and machine learning models. However, both approaches have limitations. A key insight is that publicly available blockchain data is often insufficient to conclusively determine whether a behavior constitutes manipulation. Instead, such patterns should be interpreted as indicators of anomalous or potentially strategic behavior. The main contribution of this work lies in demonstrating how a reproducible and structured approach can be used to analyze these patterns in practice. 
+
+
+2. Background
+2.1 Blockchain and Ethereum
+
+
+Blockchain technology is the basis for the modern decentralized financial system (Defi). A blockchain can be described as a distributed append only database where transactions are stored in blocks that are cryptographically linked to each other. Every block contains an amount of transactions and a reference to the previous block, this creates a chain of blocks and assures the integrity of the data. [1]
+
+
+  
+
+
+
+Ethereum is one of the most used blockchain platforms and does not only enable transactions of value but also execution of smart contracts. Smart contracts are programs that run deterministically on the blockchain and automatically execute predefined instructions when certain terms are fulfilled. This enables development of decentralized applications where logic and data are handled without the need of a centralized actor. 
+
+
+Transactions in Ethereum are sent by users and are included in blocks by validators (validators have taken the role that miners previously had). The order in which a transaction is executed in a block is not strictly defined by the users, but rather decided by the actors of the network based on factors such as gas price. This implies that the execution order can be strategically affected which is a central part of the analysis of market manipulation. [2]
+2.2 Decentralized Finance (DeFi)
+
+
+Decentralized Finance (DeFi) represents an ecosystem of financial services built on top of blockchain technology, where traditional middlemen such as banks and exchanges are replaced by smart contracts. The DeFi system is basically permissionless, meaning anybody can participate without permission from a central actor. [3]
+
+
+The decentralized structure entails multiple pros, such as increased transparency, global availability and minimized transaction fees. At the same time it introduces new risks because the system lacks central control and relies on code.
+
+
+A central property with DeFi is that all transaction data is publicly available on the blockchain. This makes analysis of market behavior possible but it also opens up the possibility for actors to observe and exploit other users' transactions, which is the foundation for different types of strategic attacks. [4]
+
+
+2.3 Decentralized Exchanges (DEX)
+
+
+Decentralized Exchanges (DEX) are trading platforms in DeFi where users can swap assets directly via smart contracts without relying on a central orderbook or middleman. In contrast to centralized exchanges (CEX), where a central actor matches buy and sell orders, trading on DEX happens through on-chain interactions with liquidity pools. [5]
+
+
+Because all transactions on a DEX happen on the blockchain all data is observable. This means that information such as trading size, price changes and transactions is available for all actors across the network. This transparency is a presumption for analysis of market behavior, but also creates possibilities for strategic behavior where actors can position their transactions in relation to others. 
+An important consequence of this design is that transaction outcomes not only depend on individual transactions, but also their relative order in the same block. This makes transaction order and execution sequences central for understanding price movements and potential manipulations on DEX. [3]
+
+
+
+
+2.4 Automated Market Makers (AMM)
+
+
+In contrast to traditional trading platforms where orderbooks are used to match buy and sell orders, decentralized exchanges are based on Automated Market Makers (AMM). Trading in an AMM does not happen between users directly but against a liquidity pool that contains two or more assets.
+
+
+A liquidity pool is financed by users called liquidity providers. Liquidity providers deposit assets into the pool and in return get a part of the transaction fees. The price on an asset is determined algorithmically based on the relation between the assets in the pool rather than an orderbook.
+
+
+In the most basic model, that is used in Uniswap V2, price is determined by the constant product formula:
+
+
+        
+
+
+Where x and y represents the amount of two assets in the pool and k is a constant. When a user does a swap the balance between the assets changes, which affects the price. [6]
+
+
+An important consequence of this model is that bigger transactions lead to bigger price changes, known as price impact. This means that a user can experience slippage in prices where the actual price deviates from the expected price at the time of the transaction. This mechanism is central for understanding market behaviors in AMM based systems and lays the foundation for multiple types of strategic attacks, where actors exploit changes in the pools state and transaction order to generate profit. [7]
+
+
+ 2.5 Uniswap V3
+
+
+Uniswap V3 is a further development of the former AMM models and introduces more improvements, where the most highlighted one is concentrated liquidity. In contrast to earlier versions, where liquidity is distributed evenly over the full price interval, liquidity providers in Uniswap V3 now can choose a specific price interval where their capital is active. 
+
+
+This enables more capital efficiency usage of liquidity, but also means that liquidity in a pool can vary heavily depending on the actual price. When price moves outside a given interval the belonging liquidity becomes inactive which can lead to lower efficient liquidity and bigger price movements.
+
+
+Trading in Uniswap V3 happens through swaps, where a user swaps an asset to another. Every swap affects the pool's state, including price and liquidity. Price movements are represented directly through so called ticks, where every tick corresponds to a specific price interval.
+
+
+Because liquidity is unevenly distributed, prices can move differently depending on where in the price interval the trading happens. This makes price dynamic in Uniswap V3 more complex than in former AMM models. [8]
+  
+
+
+
+In Uniswap V3 price is not directly represented by the balance between two assets in the pool, but with a variable called sqrtPriceX96, that is defined as the squared root of the price relations between the assets, scaled with a factor for numeric precision. The actual price can be expressed as:
+        
+
+
+
+Beyond this a system of ticks is used, where every tick represents a specific price interval. Price can therefore be expressed as:
+
+
+        
+
+
+
+
+This complexity has two important implications for analysis of transaction data. Firstly it is more difficult to interpret price movements, because it depends on trading size and local liquidity. Secondly the varying liquidity created opportunities for strategic behavior, where actors can exploit areas with low liquidity to have a high impact on price. 
+
+These properties makes Uniswap V3 an especially interesting environment for studies of market manipulation and anomaly detected because both price and liquidity is changed dynamically and effected by sequences of transactions. [9]
+
+
+ 2.6 Transactionorder, gas and blockstructure
+
+
+Ethereum transactions are organized in blocks that are created by validators (Validators replaced the formerly used “Miners” which are more well known). Every block contains a sequence of transactions that are executed in a specific order. This order is crucial because the outcome of the transaction can depend on previous transactions in the same block. 
+
+
+When a user sends a transaction to the network the transaction is initially placed in a mempool(queue of pending transactions), where they wait to be included in a block. Validators pick which transactions that will be included and in which order, often based on economic incitement such as gas price. Transactions with higher gas price are generally prioritized, because they give higher yield to the validator.
+
+This mechanism means that transaction order is not strictly deterministic from the user's perspective. Instead it can be affected strategically by actors that are willing to pay high fees or specialized infrastructures to control the execution order. [10]
+
+
+One important phenomenon in the context is that multiple transactions can be executed in the same block, often with very small temporal differences. This means that the observed sequence of transactions does not necessarily reflect how the transactions were perceived or planned by the users.
+
+
+The growth of private transaction channels, such as Flashbots have made it possible for actors to send transactions directly to validators without exposing them in the public mempool. This means that certain transactions are never visible before they are included in a block. This limits the possibility to reconstruct market dynamics based on solely publicly available data. [11]
+
+
+These properties make analysis of transaction data have to have the difference between observed transaction sequence and actual execution sequence in regard. Which is central in identifying strategic behaviors in decentralized markets. [12]
+
+
+ 2.7 Sandwich attacks and Maximal Extractable Value (MEV)
+ 
+In decentralized exchanges the possibility for strategic behavior erupts by control over transactional order. A key concept in the context is Maximal Extractable Value (MEV), which refers to the extra profit that can be extracted by manipulating the order, including or excluding transactions in a block. [12]
+
+
+One of the most studied forms of MEV are sandwich attacks. A sandwich attack means that an actor places two of their own transactions around another user's transactions to profit from the price impact that occurs in an AMM.
+
+
+The attack typically contains three steps:
+1. Frontrunning:
+The attacker identifies an incoming transaction and places their own transaction before the incoming transaction in order to affect the price in the pool.
+2. Victim Transaction:
+The original user's transaction is executed to a worse price because of the earlier price change.
+3. Backrunning:
+The attackers place an additional order after the victim to reset the price and realize profit.        
+This sequence results in the attacker buying an asset to a lower price and selling to a higher price, while often the victim has a worse outcome than expected.
+
+
+Although it is important to note that identifying sandwich attacks in public data is not trivial. Because of block structure, transaction order and private execution channels observed transaction sequences can indicate sandwich-like patterns without necessarily being one.
+
+
+Practically sandwich sequences analyzed by looking at three transactions in short proximity where they display a pattern of price change and address relations that are consistent with a sandwich attack. These patterns are used as a proxy for potential strategic behavior rather than definite proof of manipulation. [13]
+
+
+2.8 Anomaly detection and machine learning methods
+
+
+Anomaly detection aims to identify data points or patterns that deviate from the normal behavior in a dataset. In the financial system such methods are used to detect for example scams, market manipulation or other unusual transaction patterns. In the context of decentralized exchanges this means identifying transactions or sequences of transactions that differ from usual trading behavior.
+
+
+Methods for anomaly detection can roughly be divided into rule based and data driven methods. Rule based methods work with predefined criterias while machine learning methods instead learn from patterns in the data.
+[14]
+There are multiple machine learning models that are relevant for this project:
+
+
+Logistic Regression is a simple but effective classifier that is used to model the probability that a data point is a certain class . The model is linear and easy to interpret which makes it suitable for a baseline to compare to more advanced models. [15]
+
+
+Random Forest is a method that is based on multiple decision trees, where every tree is trained from different parts of the data. By combining multiple trees the model can catch non linear connections and reduce the risk of overfitting. Random Forest is especially useful in complex datasets with larger amounts of features. [16]
+
+
+XGBoost is a further development of boosting methods where models are trained sequentially to correct former errors. This method has high performance in many classifying problems and can effectively handle both non linear relations and imbalanced data. [17]
+
+
+Isolation Forest is a method specifically developed for anomaly detection. In contrast to classifier models this idea builds on the idea that anomalies are easier to isolate than normal data points. By randomly partitioning the data in tree structures the model can identify data points that deviate from the majority. [18]
+
+
+These models represent different methods to identify deviating behavior. In this work they are used to analyse to what extent machine learning models can complement rule based methods in identifying sandwich patterns in transaction data.
+2.9 Evaluation of machine learning models with imbalanced data
+When evaluating machine learning models it is important to choose metrics that fit the character of the problem. In this work the task is to identify sandwichlike behavior in transaction  data. The dataset only consists of a small amount of these problems and that makes the dataset imbalanced. This means that one class, normally, is much larger than the other class that represents suspect behavior.
+
+
+In an imbalanced dataset the accuracy can be a misleading metric. Accuracy measures how big part of all observations that the model classifies are correct. If almost all observations belong to the normal class can a model get high accuracy by almost always predicting the normal class. Such a model can therefore look good even though it fails to find the deviating cases. Therefore other metrics that are more informative are used. [19]
+
+
+Precision describes how big part of the observations that the model marks as positive are actually positive. In this work high precision means that the transactions that the model marks as sandwich-like often actually are correct. Low precision on the other hand means that the model generates a lot of false positive results, meaning that normal trading is labeled as suspicious. 
+
+
+Recall describes how big a part of all positive cases that the model actually could find. In this work high recall means that the model finds a big part of the transactions that have been classified as weak_anomaly. Low recall means that the model misses a lot of potential suspect patterns. [20]
+
+
+F1-score combines precision and recall to a joined metric. It is used when both false positive and false negative results are important. High F1-score means that the model both finds a lot of positive cases and also avoids marking normal cases as positive. [21]
+
+
+PR-AUC or area under precision recall curve is used to measure how well the model balances precision and recall over different decision thresholds. A precision recall curve shows how precision and recall changes when the threshold for classifying a case as positive changes. This is especially relevant in an imbalanced dataset because focus is on how well the model finds the rare positive class. [22]
+
+
+A decision threshold decides what probability or score a model needs to classify as a positive. If the threshold is lowered the model will find more positive cases which will increase recall but at the same time it risks that precision might decrease because more normal cases are marked as suspect. If the threshold is higher precision might increase but the model can miss more positive cases. Therefore the choice for threshold is important in anomaly detection. [23]
+2.10 Model score and score distributions
+Many machine learning models do not only give classification, but also a score or a probability. A score can be interpreted as how strongly the model assesses an observation to belong to the class. In this work a low score means that the model assesses a transaction as normal while a high score means that the model assesses the transaction as sandwich-like or deviating.
+
+
+Score distributions are especially useful because they show more than just a final classifying metric. They can show if the model is clearly sure in its assessments or if a lot of observations lie in an unsure area. In this work score distributions are used to see if the models separate normal trading from sandwich like behavior in a stable way. [24]
+2.11 Supervised and unsupervised learning
+Machine learning can be divided into different types depending on what type of training data that is used. In supervised learning the models are trained with examples where the correct class already is given. The models learn to connect features to a certain class. 
+
+
+In unsupervised learning data without labels is used. The models try to find deviating observations based on the structure of the data. Isolation Forest is an example of such a method. It builds on the idea that anomalies are easier to isolate than normal observations. [25]
+2.12 Spearman correlation and ranking stability
+Correlation is used to measure the connection between two variables. A normal correlation method is Pearson correlation that measures linear connections between numeric values. Spearman correlation instead measures the connection between rankings. It means that Spearman examines if high values in a variable tend to correspond to a high value in another variable without the connection being linear.
+
+
+Spearman correlation is especially useful when you want to compare rankings.  In anomaly detection it is often important to know if the same observations get ranked high by the model even if the score values differ. If two models give similar ranking of two events then it means that they prioritize similar cases as deviating. [26]
+2.13 Cohen’s d and effect size analysis
+Cohen’s d is a statistical effect size measure used to quantify the difference between two groups relative to their variability. Unlike hypothesis testing, which mainly evaluates whether a difference is statistically significant, Cohen’s d measures how large the difference actually is in practical terms.
+The metric is commonly used to compare distributions between groups by calculating the standardized distance between their means. Larger absolute values indicate stronger separation between groups, while values close to zero indicate that the groups are more similar. [27]
+2.14 Weak labels and weak supervision
+In many machine learning problems, a model is trained using labels that represent the correct class for each observation. In this work, however, verified ground-truth labels for sandwich attacks are not available. Public blockchain data shows executed transactions, but it does not directly reveal trader intent or whether a specific transaction sequence was actually manipulative. Because of this, the work uses weak labels instead of manually verified labels.
+Weak supervision means that labels are created from imperfect but useful sources, such as heuristic rules or automatically generated labeling functions. These labels are weaker than manually verified ground truth because they can contain both false positives and false negatives. However, they can still provide enough structure for training and evaluating models when true labels are difficult to obtain. [28]
+2.15 LSTM and sequence modeling
+Long Short-Term Memory networks, usually called LSTMs, are a type of recurrent neural network designed for sequential data. Unlike ordinary feedforward models, LSTMs process observations in order and maintain an internal state that can carry information from earlier time steps to later time steps. This makes them suitable for problems where the meaning of an observation depends on what happened before it.
+LSTMs were introduced to address limitations in traditional recurrent neural networks, especially the difficulty of learning longer dependencies in sequences. They use internal gates to control what information should be remembered, updated or forgotten over time. This makes them useful for time series and ordered event data, where temporal context can be important. [29]
+2.16 Autoencoders
+An autoencoder is a neural network that is trained to reconstruct its own input. It usually consists of two main parts: an encoder and a decoder. The encoder compresses the input into a smaller internal representation, often called a latent representation, while the decoder tries to reconstruct the original input from that representation.
+The purpose of this structure is to force the model to learn important patterns in the data. If the model can reconstruct the input well after compression, it has learned a useful representation of the normal structure in the data. Autoencoders have therefore been used both for dimensionality reduction and for anomaly detection. [30]
+2.15 Reconstruction error
+Reconstruction error measures the difference between the original input and the output reconstructed by an autoencoder. If an autoencoder has learned the structure of normal data, it should usually reconstruct normal observations with low error. Observations that differ from the learned normal patterns are expected to produce higher reconstruction error.
+In anomaly detection, this difference can be used as an anomaly score. A low reconstruction error indicates that the input resembles patterns the model has learned well, while a high reconstruction error indicates that the input is harder for the model to reconstruct and may therefore be anomalous. [30]
+
+
+2.15 Class imbalance handling
+BCEWithLogitsLoss is a binary classification loss function commonly used in neural networks. It combines a sigmoid activation function with binary cross-entropy loss in a numerically stable formulation.
+pos_weight is a weighting parameter used together with BCEWithLogitsLoss to increase the penalty for incorrectly classifying positive samples. This is commonly used in imbalanced datasets where the positive class is rare. [36]
+WeightedRandomSampler is a sampling strategy that increases the probability of selecting minority-class samples during minibatch training. This helps expose the model to anomalous examples more frequently in highly imbalanced datasets. [37]
+2.16 Jaredfromsubway.eth
+Jaredfromsubway.eth is a widely known Ethereum address that has become strongly associated with large-scale MEV-related trading activity on decentralized exchanges. The address attracted significant attention within the blockchain and DeFi community because of its unusually high transaction volume, extensive same-block trading activity and repeated appearance in transaction structures commonly linked to automated MEV strategies. 
+Public blockchain analyses and industry reports have identified the address as one of the most active participants in Ethereum blockspace competition during periods of high decentralized exchange activity. The address has frequently been observed interacting with highly liquid pools on Uniswap V3 and other decentralized exchanges through automated and high-frequency transaction execution. [38]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3. Related Work
+
+
+The research in the area of manipulation and anomaly detection in decentralized financial markets is currently at a crosspoint of blockchain security, market design and machine learning. Related work has mainly been in two areas. The first one is to analyse or prevent specific attacks in decentralized exchanges, especially in frontrunning and sandwich attacks. The second one is more focused on more general methods for anomaly detection in financial and blockchain based transaction data. In the contrary there is a deficit of studies that combine these two perspectives in the form of a pipeline to detect sandwich attack patterns in public DEX-data.
+
+
+One central contribution in the area of DEX research is ARMM [31], where S.Jiang proposes a new AMM design with an built in prevention for sandwich attacks by reordering the transactions before execution. The study shows that sandwich attacks are highly dependent on a specific transaction order and this structure can be distributed by reordering mechanisms. The main focus of the work is to prevent the attack rather than detecting suspicious patterns. Although this study is an important background to the attack's structure and possible defense, it does not answer the question of how sandwich attack patterns can be identified in existing Uniswap data.
+
+
+M. Naviglio [32] gives another important perspective by analysing price manipulations in new crypto tokens on Uniswap V2. Their result shows that sandwich attacks, rug pulls and honeypots are closely connected with low liquidity and that the interpretation of price movements differ from the actual swap time and physical time. The study also shows that what might look like a manipulating sequence of swaps is not necessarily manipulation because the same block can contain multiple intertwined transactions and private relays that Flashbots limit visibility in. This is especially relevant because it induces caution to interpretation of sandwich-like patterns by only looking at the transaction ordering, leading to increasing importance of other features.
+
+
+There are also theoretical methods that try to handle sandwich attacks by game theory and mechanism design. Y. Liang [33] models the relation between the market and participants as a mechanism design problem where the rules are shaped to minimize the incitement to manipulation. This research is valuable because it shows that sandwich attacks are not only a technical problem, but also an incitement problem. At the same time their contribution is mainly theoretical with limited connection to data driven anomaly detection in DEX transactions. 
+
+
+In parallel with DEX-research there is a bigger literature in anomaly detection in financial markets. Here both machine learning methods and deep learning are being used. For example Y. Li [34] shows that combinations of MLP, LSTM and autoencoders can identify deviating behavior in financial transaction data by capturing both non linear connections and time dependencies. This type of research is relevant for this thesis because sandwich attacks are not only characterized by singular extreme datapoints, but with sequences, order relations and local patterns over time. At the same time these studies are usually developed for traditional centralized markets and don’t have the properties of AMM-based DEX in regards, such as poolstate, liquidity changes and same block ordering.
+
+
+Similar observations apply to research in anomaly detection in blockchain transactions for digital banking. Here models such as Isolation Forest, SVM, Random Forest, autoencoders and LSTM are being discussed as methods for identifying anomalous transaction patterns in blockchain environments. This literature is methodologically useful because it shows that blockchain data suits both rule based and data driven models. [35]
+
+
+In summary, related work shows that sandwich attacks is a well known and serious problem in decentralized markets, also that market design and machine learning offers promising ways to attack the problem. At the same time there is still a clear gap in the research. A lot of the DEX literature focuses on prevention, economical analysis or protocol design, while a lot of the anomaly detection is general and not DEX specific. Therefore there is still missing work that in a reproducible way can examine how sandwich patterns can be identified in public Uniswap V3 data with the help of machine learning. 
+4. Problem Formulation
+4.1 Problem Description
+The increasing usage of decentralized exchanges has created new opportunities for analysis of financial markets, but has also introduced new forms of strategic behavior. One central problem in these systems is the occurrence of sandwich attacks, where actors exploit the transaction order and price dynamic in Automated Market Makers to generate profit at the expense of other users.
+
+
+Even though this phenomenon is well known it is difficult to identify such attacks practically. One central challenge is that blockchain data only shows observable transactions and their order in the block, but not the actual intention and complete execution context of the actor. This means that there is no reliable foundational truth to decide which transactions that actually are attacks.
+
+
+Observed price movements are not only affected by strategic behavior, but also by factors such as liquidity distribution and transaction size. This makes trivial heuristic rules a riskful method because they can generate both false positive and false negative results. At the same time more advanced methods such as machine learning models need some form of labeled data to be trained and evaluated.
+
+
+This leads to a central problem in research: how can suspected sandwich-like behaviors be identified in public DEX-data, despite the lack of perfect labeling and limited observability.
+4.2 Purpose
+The purpose of this thesis is to examine how anomaly detection can be used to identify sandwich-like behaviors in transaction data from Uniswap V3. The work focuses on developing and evaluating a method that combines rule based heuristics with machine learning to analyse sequential patterns in data.
+4.3 Question
+The work is based on the following main question:
+How can sandwich-like behavior be identified in public transaction data from Uniswap V3, and to what extent can machine learning generalize beyond heuristic rule based signals?
+
+
+To answer this primary question the following questions are also used:
+* How can sandwich-like patterns be defined from observed transaction sequences?
+* To what extent can machine learning generalize beyond rule based signals?
+* What features in the data are most relevant to identify such behavior?
+* How does the performance differ between machine learning models in this context? 
+
+
+4.4 Motivation
+The problem is relevant from both a practical and a scientific perspective. In the DeFi ecosystem sandwich attacks affect users trading results and can contribute to decreasing trust in decentralized markets. To be able to identify and analyse such behaviour is therefore of high importance for both users, developers and researchers.
+
+
+From a research perspective the work addresses a gap between two established areas. There is already research focusing on analysing and preventing specific attack types in decentralized exchanges. There is also literature about anomaly detection in financial systems where machine learning is used to identify deviating behavior. Although the combination of these perspectives is limited, especially in the context of decentralized markets. 
+
+
+By researching how data driven analysis can be applied on DEX data this work contributes to filling this knowledge gap.
+4.5 Presumptions and limitations
+The work build on the following presumptions and limitations:
+* Analysis is solely based on public blockchain data, which means that private transactions and complete mempool information is not available. 
+* Identified patterns represent sandwich-like behaviors and are used as proxy for potential attacks, but are not verified as actual attacks.
+* Focus is on Uniswap V3 and a limited amount of transaction data, which affects the generalizability. 
+* Machine learning models are trained on weak labels based on heuristic rules, which means that the results are affected by the uncertainty of the labeling.
+* The work focuses on analysis of historical data and does not handle realtime detection nor any implementation in a live production system.
+
+
+4.6 Goals
+To attain the purpose of the work the following goals are set:
+1. Data collection and structuring - Collect and process transaction data from Uniswap V3.
+2. Definition of sandwich pattern - Develop heuristic rules based on transaction order, price movement and address relationships. 
+3. Construction of weak labels - Generate a labeled dataset based on the predefined patterns.
+4. Feature engineering - Identify and construct relevant variables that describe both single transactions and sequences.
+5. Model development - Implement and train machine learning models to identify deviating behavior.
+6. Evaluation and comparison - Compare rule based and machine learning based methods by their performance.
+7. Analysis of limitations - Evaluate the strengths and weaknesses of the method.
+
+
+
+
+
+
+
+
+
+
+5. Method
+5.1  Research approach
+This thesis uses a quantitative and experimental research approach based on historical blockchain transaction data from Uniswap V3. The work combines heuristic rule-based analysis, weak supervision, supervised machine learning and unsupervised anomaly detection to investigate sandwich-like behavior in decentralized exchanges.
+The approach was chosen because verified ground truth for blockchain manipulation is very limited. Public blockchain data contains executed transactions and market activity, but does not directly expose trader intent or complete mempool visibility. As a result, the work focuses on identifying structurally suspicious transaction behavior rather than proving manipulation.
+The study combines:
+* Rule-based heuristics
+* Statistical feature engineering
+* Supervised classification
+* Sequence modeling
+* Unsupervised anomaly detection
+* External validation
+* Manual qualitative review
+The goal is to evaluate whether machine learning models can identify stable and reproducible sandwich-like patterns in public transaction data.
+5.2 Data collection
+Historical swap data was collected from Uniswap V3 using publicly available blockchain data through GraphQL-based subgraph queries.
+The work focused primarily on high-liquidity pools, especially the USDC/WETH pool on Uniswap V3, since these pools:
+* Contain large transaction volumes
+* Exhibit significant MEV activity
+* Are frequently studied in prior MEV literature
+* Generate dense block-local transaction structures
+For each swap event, the following categories of information were collected:
+* Transaction identifiers
+* Pool and token metadata
+* Block number and timestamp
+* Log ordering
+* Sender, recipient and origin addresses
+* Token flow amounts
+* Price-related variables
+* Gas price information
+The collected raw data was stored separately from processed datasets to improve reproducibility and allow repeated experimentation.
+A public blockchain source was chosen because:
+* The data is transparent
+* Experiments become reproducible
+* The methodology can be independently verified
+However, this also introduces limitations since public blockchain data lacks:
+* Private order flow
+* Mempool visibility
+* Validator-side ordering information
+* Explicit economic intent
+5.3 Weak supervision
+The work uses weak supervision because verified datasets of confirmed sandwich attacks are not publicly available.
+Instead of manually labeling every event, heuristic rules were used to construct weak labels representing sandwich-like structural behavior.
+The heuristics were based on observable transaction properties such as:
+* Same-block transaction ordering
+* Repeated addresses before and after a middle transaction
+* Local price reversals
+* Elevated gas context
+* Dense transaction activity
+This produced three main label categories:
+* normal
+* suspicious
+* weak_anomaly
+For the main binary classification experiments, the suspicious class was excluded so that the models classified:
+* normal
+ vs
+* weak_anomaly
+The purpose of weak supervision is not to create perfect ground truth, but rather to generate a structured training signal that allows machine learning models to learn potentially anomalous transaction behavior.
+This approach was chosen because:
+   * Fully verified labels do not exist at scale
+   * Blockchain anomaly detection often depends on structural proxies
+   * Reproducibility is improved compared to manual labeling
+At the same time, weak supervision introduces risks of:
+   * Label noise
+   * Heuristic bias
+   * Circular reasoning
+   * Rule memorization
+5.4 Feature engineering
+Feature engineering was used to transform raw blockchain transaction data into numerical and structural representations suitable for anomaly detection and machine learning.
+The features were designed to capture multiple aspects of sandwich-like behavior:
+   * Price movement
+   * Transaction ordering
+   * Local market activity
+   * Gas competition
+   * Address repetition
+   * Reversal structures
+   * Temporal density
+The feature groups included:
+   * Price-reversal features
+   * Gas-context features
+   * Timing and interarrival features
+   * Block-density features
+   * Address repetition features
+   * Sequential neighbor features
+   * Sandwich-support indicators
+The feature engineering process was motivated by the assumption that sandwich-like behavior does not emerge through a single isolated signal, but rather through combinations of contextual transaction structures.
+Particular emphasis was placed on:
+   * Block-local structure
+   * Sequential ordering
+   * Reversal dynamics
+   * Contextual feature interactions
+This is consistent with the theoretical structure of sandwich attacks in AMM-based systems.
+5.5 Dataset summary
+Table 5.1 summarizes the final dataset used throughout the work after data collection, preprocessing and weak-label generation, together with the derived dataset artifacts used in the experiments. The dataset consists of historical swap activity from the selected Uniswap V3 pool and contains both an event-level representation (one row per swap event) and a sequence-level representation constructed from sliding transaction windows for temporal modeling experiments.
+The final dataset includes processed event tables, sequence datasets, weak-label annotations and additional rule-extracted high-confidence structures used for evaluation and holdout experiments.
+
+
+Protocol
+	Uniswap V3
+	Network
+	Ethereum Mainnet
+	Pool
+	USDC/WETH
+	Pool address
+	0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640
+	Time period
+	2024-01-01 to 2024-02-01 (UTC)
+	Total swap events
+	187372
+	Total unique blocks
+	120134
+	Event model feature count
+	42
+	Sequence length
+	20
+	Sequence feature dimension
+	12
+	Table 5.1 Dataset statistics table
+Class imbalance
+As expected for anomaly-detection problems, the dataset is highly imbalanced. The majority of events are classified as normal activity, while only a small subset is labeled as suspicious or weak anomalies.
+The complete weak-label distribution across all classes (normal, suspicious, weak_anomaly) is presented in Table 5.2.
+             Class                                Count                                   Percentage
+normal
+	178012
+	95
+	suspicious
+	8244
+	4.4
+	weak_anomaly
+	1116
+	0.6
+	Table 5.2 Weak label distribution
+For the supervised baseline classification experiments, the intermediate suspicious class was excluded in order to construct a cleaner binary classification problem (normal vs weak_anomaly). The resulting class distribution used for these experiments is shown in Table 5.3. 
+               Class                              Count                             Percentage
+normal
+	178012
+	99.4
+	weak_anomaly
+	1116
+	0.6
+	Table 5.3 Weak label distribution subset
+Sequence dataset construction
+In addition to the event-level representation, a sequence dataset was constructed for temporal modeling experiments. The sequence representation was built using sliding windows over swap events within the same pool.
+Each sequence corresponds to a window of length:
+        L = 20
+consecutive swaps ordered by:
+        pool_address, block_number, log_index, swap_id
+A step size of:
+        step_size = 1
+was used, meaning that neighboring windows overlap.
+This procedure generated a total of:
+   * 187,353 sequence windows
+   * from 187,372 underlying swap events
+Each sequence contains a feature matrix of dimension:
+        
+where the 12 sequence features consist of a fixed subset of temporal and structural variables, including:
+   * swap magnitude
+   * gas context
+   * interarrival timing
+   * tick movement
+   * local block activity
+The target used for sequence modeling was defined as whether the sequence window contains at least one event labeled as:
+        label_class = weak_anomaly
+This formulation transforms the sequence problem into detection of anomalous temporal transaction behavior within local transaction windows. 
+Train, validation and test splits
+All dataset splits were performed using temporal ordering in order to reduce the risk of information leakage between training and evaluation periods.
+For event-level experiments, the dataset was first sorted by timestamp and then divided into:
+   * 70% training
+   * 15% validation
+   * 15% test
+For sequence-based experiments, the same principle was applied using the sequence end timestamp (window_end_time) to ensure that future transaction information could not leak into earlier training periods.
+The use of temporal splits is particularly important in financial and blockchain-related datasets because local market structures and transaction clusters may otherwise appear simultaneously in both training and evaluation data, leading to overly optimistic performance estimates.
+5.6 Event level machine learning
+The first experimental approach treated each swap as an individual datapoint. These experiments are referred to as event-level classification.
+The following models were evaluated:
+   * Logistic Regression
+   * Random Forest
+   * XGBoost
+   * Isolation Forest
+Logistic Regression was included as a linear baseline model.
+Random Forest and XGBoost were chosen because they:
+   * Model nonlinear feature interactions
+   * Handle heterogeneous features effectively
+   * Are robust in structured tabular datasets
+   * Often perform well on imbalanced classification problems
+Isolation Forest was included as an unsupervised anomaly-detection baseline.
+The event-level experiments were designed to evaluate:
+   * Whether machine learning can improve weak-label agreement
+   * Which feature structures are most informative
+   * How different model families behave in blockchain anomaly detection
+5.7 Sequence modeling
+Because sandwich-like behavior is fundamentally sequential, the work also implemented sequence-level models based on LSTM architectures.
+Instead of evaluating individual swaps independently, the sequence models analyze ordered windows of swaps from the same liquidity pool.
+Each sequence was constructed using:
+   * Block number
+   * Log index
+   * Timestamp ordering
+The sequence target was defined as:
+   * Positive if the sequence contained at least one weak_anomaly
+   * Negative otherwise
+This converts the problem into sequence-level anomaly classification.
+The sequence methodology was chosen because:
+   * Sandwich behavior occurs across multiple transactions
+   * Transaction order is critical
+   * Temporal dependencies may contain anomaly information
+   * Event-level models may lose sequential context
+5.8 LSTM
+Multiple LSTM-based approaches were implemented.
+Supervised LSTM
+The first supervised LSTM models used:
+   * Fixed-length sliding windows
+   * Event-level features per timestep
+   * Binary sequence classification
+The supervised LSTM models were designed to determine whether temporal transaction structures improve anomaly detection compared to isolated event classification.
+LSTM Autoencoder
+An LSTM Autoencoder was also implemented as an unsupervised sequence anomaly detector.
+Instead of directly predicting labels, the autoencoder learned to reconstruct normal sequence behavior. Reconstruction error was then used as an anomaly score.
+This approach was motivated by:
+   * Limited reliability of weak labels
+   * The possibility that anomalous sequences differ structurally from normal trading behavior
+   * The desire to evaluate anomaly detection independently of direct label prediction
+5.9 LSTM v2
+A second-generation sequence pipeline, referred to as LSTM v2, was later implemented to improve experimental quality, stability and leakage control.
+The initial LSTM experiments showed several challenges:
+   * Unstable convergence
+   * Weak minority-class separation
+   * Sensitivity to imbalance
+   * Inconsistent normalization behavior
+To address these problems, LSTM v2 introduced multiple methodological improvements.
+Consistent train-based normalization
+Normalization statistics were calculated only on the training split and then reused consistently for:
+   * Training
+   * Validation
+   * Testing
+   * Jared evaluation
+This was done to reduce inconsistencies and prevent normalization-related leakage.
+Early stopping based on PR-AUC
+The best model checkpoint was selected using validation PR-AUC with patience-based early stopping.
+PR-AUC was chosen because:
+   * the dataset is highly imbalanced
+   * ranking quality is more important than raw accuracy
+   * PR-AUC better reflects minority-class detection quality
+Class imbalance handling
+Class imbalance was handled through:
+   * pos_weight in BCEWithLogitsLoss
+   * Weighted sampling of positive sequences
+This was necessary because positive sequences are extremely rare and otherwise risk disappearing during minibatch training.
+WeightedRandomSampler
+WeightedRandomSampler was used to increase the frequency of positive examples in minibatches.
+This was especially important in time-based splits where positive sequences may cluster unevenly over time.
+Richer feature sets
+Two main feature configurations were evaluated:
+   * Base feature set (12 features)
+   * Rich feature set (42 features)
+The rich feature configuration added:
+   * Stronger block-context information
+   * Structural sandwich indicators
+   * Contextual sequence signals
+This allowed evaluation of whether sequence models benefit from richer contextual representations.
+Multiple sequence lengths
+Several sequence lengths were tested:
+   * L10
+   * L20
+   * L40
+This was done because sandwich-like behavior may:
+   * Occur in highly local windows
+   * Require broader contextual structure
+The experiments therefore evaluated how sensitive the sequence models are to temporal window size.
+5.10 Leakage control and ablation
+Because weak labels were partially constructed from heuristic rules, leakage-control experiments were critical.
+Two main ablation settings were implemented.
+no_rule
+The no_rule configuration removed explicit sandwich-signature features:
+   * same_block_pattern_flag
+   * strict_sandwich_support_flag
+   * three_event_pattern_indicator
+   * same_origin_before_after_flag
+This experiment tested whether the models could still identify anomalies without direct rule indicators.
+no_leakage
+The stricter no_leakage configuration additionally removed:
+   * reversal-derived composite features
+   * before/after neighbor deltas
+   * sandwich-support aggregates
+   * attacker/victim-ratio structures
+   * other rule-adjacent structural signals
+The purpose was to reduce circular reasoning and force the models to rely more on:
+   * Generic temporal patterns
+   * Gas context
+   * Transaction density
+   * Broader activity structure
+This experiment acts as the most conservative evaluation setting in the work.
+5.11 Experimental design
+The work consisted of several experiment categories:
+   1. Event-level supervised classification
+   2. Sequence-level supervised classification
+   3. Unsupervised anomaly detection
+   4. Feature-ablation experiments
+   5. Leakage-control experiments
+   6. External Jared evaluation
+   7. Strong-reference holdout evaluation
+   8. Manual block-level review
+This design was chosen to evaluate:
+   * Classification quality
+   * Robustness
+   * Generalization
+   * Leakage sensitivity
+   * Sequence learning capability
+5.12 Train, validation and test
+All experiments used time-based dataset splits:
+   * 70% training
+   * 15% validation
+   * 15% testing
+A time-based split was chosen instead of random sampling because blockchain transaction data is highly temporally correlated.
+Random splitting could place related local transaction structures in both training and test data, resulting in unrealistically optimistic evaluation.
+For sequence models, splits were based on sequence end timestamps.
+5.13 Evaluation
+Because the dataset is extremely imbalanced, accuracy was not considered an appropriate evaluation metric.
+The main metrics were:
+   * Precision
+   * Recall
+   * F1-score
+   * PR-AUC
+PR-AUC was considered especially important because:
+   * The positive class is rare
+   * Precision-recall tradeoffs are critical
+   * Ranking quality matters more than raw classification rate
+Additional evaluation methods included:
+   * Score-distribution analysis
+   * Ranking stability analysis
+   * Spearman correlation
+   * External dataset evaluation
+   * Manual block-level review
+5.14 External evaluation
+An external Jared-related dataset was constructed to evaluate generalization.
+This dataset was built using transaction filtering connected to a known MEV-associated address.
+The purpose was not to create perfect ground truth, but to evaluate whether the models:
+   * Rank realistic MEV-like structures highly
+   * Generalize beyond the training distribution
+   * Remain stable across different training conditions
+The evaluation included:
+   * Training with and without Jared-related data
+   * Score-distribution analysis
+   * Ranking correlation analysis
+   * Manual inspection of top-ranked blocks
+5.15 Holdout experiment with high-confident cases
+A separate strong-reference holdout dataset was constructed from highly structured sandwich-like triples.
+These high-confidence structures contained:
+   * Same-block ordering
+   * Repeated actors before and after
+   * Reversal dynamics
+   * Strong structural consistency
+The holdout cases were excluded from training and used only during evaluation.
+The purpose was to test whether the models:
+   * Generalize to unseen structured patterns
+   * Learn broader anomaly behavior
+   * Avoid direct memorization
+5.16 Threats to validity
+Several threats to validity affect the interpretation of the results.
+Internal validity
+Because weak labels are heuristic, there is a risk that models partially learn the labeling logic itself rather than broader anomaly behavior.
+The no_rule and no_leakage experiments were specifically designed to reduce this risk.
+Construct validity
+The work measures sandwich-like structural behavior rather than verified manipulation.
+Public blockchain data cannot fully represent:
+   * Intent
+   * Private order flow
+   * Validator behavior
+   * Mempool competition
+External validity
+The experiments focus on:
+   * Uniswap V3
+   * Selected pools
+   * Historical transaction data
+Generalization to:
+   * Other protocols
+   * Other chains
+   * Future market conditions
+remains uncertain.
+Despite these limitations, the work provides a reproducible framework for studying anomalous transaction structures in decentralized exchanges.
+
+
+   6. Ethical and Societal Considerations
+6.1 Research Ethical Considerations
+
+
+This work is based exclusively on public and anonymized blockchain data, which means that no personal information is handled. Transactions on the blockchain are publicly available and connected to addresses rather than identifiable individuals. Therefore no ethical problems connected to consent, integrity or sensitive personal information arise. 
+
+
+At the same time it is important to note that even though blockchain addresses are pseudonyms they can in some cases be connected to real actors. In this work no attempt is made trying to identify individual users. The analysis identifies patterns rather than individual actors. 
+
+
+Another research ethical stand is how the results in this work are interpreted and presented. This is because the identified patterns are based on weak labels and therefore it is not possible to with certainty show that a certain behavior is manipulation. 
+
+
+6.2 Ethical Aspects of  Method and Result
+
+
+The method in this work builds on identifying sandwich-alike patterns based on observable data. This means a risk for faulty interpretation, where normal trading behavior can be classified as suspect, this type of misinterpretations could have consequences if used for surveillance or practical implementations.
+
+
+Therefore it is important to note that the identified patterns should be seen as indications on potential deviating behavior rather than actual proof of manipulation.
+
+
+Development of methods to detect strategic behavior in financial systems can have both positive and negative consequences. These kinds of methods can contribute to increased transparency and justice in the market, but also they can potentially be used by actors to improve their own strategies. 
+
+
+6.3 Societal Aspects
+
+
+From a societal perspective the development of analytical methods for decentralized financial systems is increasingly relevant with the growth of the actual systems. DeFi represents a new type of financial infrastructure that is global, open and mostly unregulated. This creates both opportunities and risks.
+
+
+One important contribution from this work is the display of how data analysis and machine learning can be used to understand behaviors in these systems. This can contribute to development of tools for market surveillance, which is a central component in traditional financial systems.
+
+
+At the same time there are legal and political aspects to consider. Regulation of decentralized systems is still an area in progress and methods to identify manipulation can affect how such systems are monitored in the future. The results from this work can therefore be relevant to both researchers and decision makers.
+
+
+
+
+
+
+
+
+
+
+7. Data collection and system overview
+
+
+This chapter describes how the developed analysis pipeline was constructed and how data were collected, processed and used to identify sandwich-like behavior in Uniswap V3. Focus was on creating a reproducible process where all steps from data collection to model evaluation could be implemented systematically and reproducibly. 
+
+
+The work was mainly implemented in Python and organized in a modular pipeline containing:
+   * Data collection
+   * Preprocessing
+   * Feature engineering
+   * Construction of weak labels
+   * Construction of event and sequence dataset
+   * Model training and internal evaluation
+   * External evaluation with Jared dataset
+   * Report, visualization and manual review
+
+
+This structure was chosen to make the experiments trackable and reproducible. This means that every artifact of the report, for example the dataset, metrics, tables and figures can be connected back to a specific step in the pipeline.
+
+
+ 7.1 Central concepts and experimental hypothesis
+
+
+A central concept in this work is a swap-event. In Uniswap V3 a swap-event represents a logged transaction event in a liquidity pool. For this work two properties are especially important: the order between swaps in the same block and the development of price after every swap.
+
+
+The order between swaps are reconstructed with the help of block numbers and log_index. This makes it possible to analyse local sequences of transactions in the same block and pool. The state of the price is mainly represented through tick, which works as a discrete representation of price level in Uniswap V3.
+
+
+Sandwich-like behavior in this work is seen as a local transaction pattern where multiple swaps in the same block and pool shows a structure that is coherent with known sandwich strategies. Typical signals are that price first moves in one direction and after partially reverses, often in the context of concentrated block activity, recurring addresses or increased gas price levels.
+
+
+The experiment proceeded from three main hypothesis:
+   * Heuristically created labels can give enough training signals for machine learning models to be able to learn general anomaly patterns in block local data.
+   * If the models generalize they should be able to rank deviating behavior even in an independent dataset connected to Jared, without Jared-events classified as anomalies.
+   * If the results mainly depend on rule memorization the performance of the models or ranking should clearly change when explicit rule based features are removed.
+
+
+7.2 Data collection from Uniswap V3
+
+
+Data collection was implemented with the help of Uniswap V3 data via GraphQL. Focus was on swap events from pools with high activity and high liquidity, because such environments are relevant for MEV-related trading and sandwich-like behaviors.
+
+
+The main pool in the study was USDC/WETH on Uniswap V3. This pool was chosen because it has high trading activity, big liquidity and is often used in analysis of MEV related behaviors. 
+
+
+For every swap the following types of information were collected:
+   * Identifiers and context: swap_id, pool_address_ transactions_hash, block_number, log_index and timestamp
+   * Address fields: sender_address, recipient_address, origin_address
+   * Trading size: amount0, amount1
+   * Price and pool state: tick, sqrt_price_x96_raw
+   * Gas information: gas_price_raw
+   * Token and poolmetadata: token-symbols, decimals and fee_tier
+
+
+The data were collected iteratively over a defined time interval and first stored in raw format. This was done so raw data could be reused in later experiments without needing to fetch new data again.
+
+
+7.3 Preprocessing and data construction
+
+
+After data collection preprocessing was implemented to create a consequent and analysable table with swap events. The purpose was to ensure that the data could be used for both sequential analysis and model training.
+
+
+Preprocessing mainly covered:
+   * Cleanup of obviously broken or incomplete rows
+   * Managing missing values
+   * Type conversion of numeric fields such as gas price, token amount and price related variables
+   * Sorting per pool_address, block_number and log_index
+   * Construction of identifiers for later joins between features and labels.
+
+
+Sorting was especially important because the work analyses local transaction sequences. If the order between swaps in the same block is reconstructed, faulty feature engineering and labeling risks to create misleading results.
+
+
+The data was organized by multiple artifacts:
+   * Raw data
+   * Processed swaps table
+   * Event feature tables
+   * Sequence feature tables
+   * Label tables
+   * Model predictions
+   * Metrics, figures and rapport files.
+
+Bigger tables were stored in Parquet format to enable efficient reading and processing.
+
+
+7.4 Feature engineering on event level
+
+
+Feature engineering was used to convert raw swap data to variables that describe relevant aspects of transactional behavior. The goal was to capture both single events and their local context in the block. Features were divided into multiple main groups.
+
+
+Trade magnitude and direction describes the size and direction of a swap. For example swap_size_token0 and swap_size_token1. These were used because big transactions can affect price more than small transactions, especially in areas with lower local liquidity. 
+
+
+Price movements and reversal signals describe how price moves among an event, For example abs_tick_change and combined_reversal_magnitude. These features are central because sandwich-like behaviors often mean that price first move to one direction and then move back.
+
+
+Timing and block activity describes how dense the activity in a block is. For example same_block_event_count, block_event_coumt, position_in_block, interarrival_seconds and local_event_density_10. These are used to capture burs and alike activity and sequential concentration. 
+
+
+Gas context describes if a transaction deviates from the local gas level. For example gas_price_gwei, gas_price_relative_to_local_median and gas_spike_flag, Gas related features are relevant because increased gas levels can indicate competition in transaction priority.
+
+
+Address behavior describes recurring actors and concentration in short sequences. For example counts for sender and recipient in a block or near proximity windows. These are used to capture structures where the same address occurs repeatable in a local transactional pattern.
+
+
+Sandwich support signals describe more specific block structures. For example neighbor relations between previous and following swaps and joined indicators such as sandwich_support_core.
+
+
+The full feature list with definitions is in Bilaga xxx
+7.5 Construction of weak labels
+
+
+Because a ground truth for actual sandwich-attacks was missing, a weak supervision method was used. This means that labels were created with heuristic rules that identify suspected structures rather than verified attacks. 
+
+
+The purpose of weak labeling was to create a training signal for the models. Labels should therefore be interpreted as approximations of potentially deviating behavior, not as evidence of manipulation.
+
+
+The heuristics were based on multiple types of observable patterns:
+   * Multiple swaps in the same block and pool
+   * Clear price movement followed by reversal
+   * Repeated addresses or neighbor structure that resembles attacker-victim-attacker.
+   * Deviating gas behavior in local block context
+   * High block activity or concentration sequential structure
+
+
+From these rules labels such as normal, suspicious and weak_anomaly were created. In model training the class suspicion was removed from the main experiment, in order for it to become a binary normal or weak_anomaly problem.
+7.6 Sequence dataset with sliding window
+
+
+In addition to an event level dataset, a sequence dataset was constructed. In this dataset every row represents a sliding window of swaps in the same pool. Window size was set to 20, which means that each sequence consists of 20 consecutive swaps. Every step in this sequence contains a fixed set of event features, for example features connected to trading size, timing, gas and price movement. Sequence targets were constructed by marking if the window contained at least one weak_anomaly. 
+This dataset was created to enable experiments with temporal models, for example LSTM, and to analyse if temporal patterns can better be captured when multiple events are evaluated together.
+
+
+7.7 Sequence modeling with LSTM
+To evaluate whether temporal transaction structures could improve anomaly detection, multiple LSTM-based sequence models were implemented. Unlike the event-level models, the sequence models operate on sliding windows of swaps rather than isolated transactions. This enables the models to learn temporal dependencies and local sequential structures inside pools.
+The first supervised LSTM models used:
+   * Fixed-length sequence windows
+   * Timestep-based event features
+   * Binary sequence classification
+The purpose was to examine whether sequential transaction dynamics could improve identification of sandwich-like behavior. An unsupervised LSTM Autoencoder was also implemented. Instead of directly predicting labels, the autoencoder learned to reconstruct normal sequence behavior. Reconstruction error was then used as an anomaly score. This approach was chosen because anomalous sequences may differ structurally from normal trading behavior even when explicit labels are uncertain.
+7.8 LSTM v2 pipeline
+The initial LSTM experiments revealed several practical and methodological challenges connected to sequence-based anomaly detection in highly imbalanced blockchain transaction data. The first supervised sequence models showed unstable convergence, weak separation between minority and majority classes and sensitivity to preprocessing inconsistencies. In addition, there was a risk that the models could partially relearn heuristic labeling logic rather than broader temporal anomaly structures.
+To address these issues, a second sequence pipeline referred to as LSTM v2 was implemented. The purpose of this pipeline was to improve:
+   * Experimental stability,
+   * Reproducibility,
+   * Handling of class imbalance,
+   * Temporal representation quality,
+   * And leakage control.
+Several methodological improvements were introduced in LSTM v2.
+Consistent train-based normalization
+In the earlier sequence experiments there was a risk that normalization could differ between training and experiment runs. To avoid inconsistencies, LSTM v2 calculated normalization statistics only on the training split. The same normalization parameters were then reused consistently for:
+   * Training,
+   * Validation,
+   * Testing,
+   * and Jared evaluation.
+This approach reduces the risk of leakage and ensures that the models are evaluated under conditions closer to real inference settings.
+Early stopping based on PR-AUC
+LSTM v2 used patience-based early stopping where the best model checkpoint was selected according to validation PR-AUC rather than only validation loss. This choice was motivated by the big class imbalance in the dataset. In highly imbalanced anomaly detection problems, metrics such as accuracy or raw loss may improve even when the model performs poorly on the minority class. PR-AUC was therefore considered more appropriate because it directly measures the quality of ranking and classification of positive anomalous sequences.
+Handling of class imbalance
+The supervised sequence experiments used multiple strategies to handle imbalance. First, pos_weight was used in BCEWithLogitsLoss so that false negatives on positive sequences received a larger penalty during optimization. This reduces the tendency for the model to classify nearly all sequences as normal. Second, weighted sampling strategies were introduced to increase positive sequences during training. Without this adjustment, positive sequences risk becoming underrepresented in minibatches because of the strong imbalance between normal and anomalous data.
+WeightedRandomSampler
+LSTM v2 additionally implemented WeightedRandomSampler during training. This sampling method increases the frequency of positive examples appearing in minibatches without duplicating the dataset itself. This was especially important because the time-based split creates periods where anomalous sequences may appear rarely. Increasing positive exposure improves gradient quality and stabilizes minority class learning.
+Richer feature configurations
+The initial sequence models mainly relied on a smaller feature set containing approximately 12 variables connected to:
+   * Swap size,
+   * Timing,
+   * Gas context,
+   * Block activity,
+   * and price movement.
+LSTM v2 expanded this with a larger  feature configuration containing approximately 42 features. The richer configuration added:
+   * Broader block-context information,
+   * Structural transaction signals,
+   * Local sequential indicators,
+   * And additional sandwich-support related variables.
+The purpose was to evaluate whether temporal sequence models become significantly more effective when they receive more contextual information per timestep.
+Multiple sequence lengths
+Several sequence lengths were evaluated in LSTM v2:
+   * L10,
+   * L20,
+   * and L40.
+This was motivated by the fact that sandwich-like and MEV-related behaviors may occur over different temporal scales. Some patterns are highly local and occur within only a few swaps, while others depend on broader transaction context inside the block or pool. Testing multiple window lengths therefore made it possible to examine how sensitive the sequence models were to temporal context size.
+Rule-removal experiments
+To reduce the risk that the sequence models only relearned explicit heuristic logic, LSTM v2 implemented a no_rule exclusion setting.
+In this configuration, several of the clearest rule-signature features were removed:
+   * same_block_pattern_flag
+   * strict_sandwich_support_flag
+   * three_event_pattern_indicator
+   * same_origin_before_after_flag
+The purpose was to evaluate whether the models could still identify anomalous transaction structures without direct access to the strongest heuristic indicators.
+Leakage-control experiments
+A stricter experimental configuration called no_leakage was also implemented. In addition to the explicit rule-signature features, this setting removed a broader group of rule-adjacent and structurally derived variables, including:
+   * Reversal-based composite features,
+   * Neighbor-delta features,
+   * Sandwich-support aggregates,
+   * Attacker/victim-ratio variables,
+   * and other before/after relational indicators.
+The motivation behind this experiment was to minimize circular reasoning. Because the weak labels themselves were partially created using heuristic transaction structures, there is a risk that machine learning models simply relearn those same structures directly from the features. The no_leakage configuration therefore represents the most conservative experimental setting in the work, forcing the sequence models to rely more heavily on:
+   * General temporal behavior,
+   * Gas context,
+   * Transaction density,
+   * and broader sequential dynamics rather than explicit sandwich signatures.
+7.7 Model training and internal evaluation
+
+
+Multiple models were implemented and compared to examine how well different types of models can identify sandwich-like behavior.
+
+
+The main models were:
+   * Logistic Regression, as baseline
+   * Random Forest
+   * XGBoost
+   * Isolation Forest, as unsupervised anomaly detection model
+
+
+The dataset was divided into training, validation and test splits. This was chosen to minimize the risk for data leakage between near proximity periods. In financial transaction data a randomized split can give a too optimistic view because close events might be highly dependent on each other.
+
+
+Because the dataset is strongly imbalance the following metrics were mainly used:
+   * Precisios
+   * Recall
+   * F1-score
+   * PR-AUC
+
+
+Accuracy was not used as a primary measurement because a model can get high accuracy by almost always choosing the majority class. In addition to numeric metrics score distributions, feature importance and the models ranking stability were analyzed. The purpose was to not only evaluate the performance but also examine if the models learned block local anomaly structures.
+
+
+7.8 External evaluation with Jared and holdout experiment
+
+
+To examine the model’s ability to generalize external evaluations were implemented.
+
+
+A separate Jared dataset was constructed by filtering events connected to a well known MEV associated address. This dataset was not used as normal ground truth, but rather as an independent dataset to analyse how the models behave on data connected to a well known MEV-actor.
+
+
+To minimize the risk for circle reasoning multiple control tests were made:
+   * Models trained with and without Jared related events
+   * Explicit rule based features were removed
+   * Score distributions compared between the models
+   * Correlation between scores was analysed
+   * Top ranked events were manually reviewed in block context
+
+
+This enabled examination if the models only recognized a specific address or if it identified more general MEV-like structures. In addition to the Jared evaluation another separate dataset was created with high confident cases. These consisted of highly structured triplets that filled multiple sandwich-like criterias at the same time. The models were trained outside of these cases and were later tested on them. This holdout experiment was used to examine if the models could identify clear reference cases even when it was not included in the training data.
+
+
+7.9 Manual review and block level analysis
+
+
+To complete the quantitative results a manual review was made of the top ranked events. The review was done by reconstructing the block context and sorting swaps after log_index.
+
+
+In the review of top ranked events the following characteristics in blocks was seen:
+   * Clear price reversals
+   * Concentrated activity
+   * Increased gas levels
+   * Recurring address patterns
+   * Sequential structures that resemble sandwich behavior
+
+
+The manual review was not used as ground truth but rather as a quality check to assess if the model's highest ranked cases were plausible.
+
+
+7.10 Reproducibility and artifacts
+
+
+The pipeline was built so that every step could be run separately and generate traceable artifacts. This is also true for dataset, metrics, predictions, figures and tables.
+
+
+The code base was organized in separate modulus for:
+   * Ingestion
+   * Preprocessing
+   * Features
+   * Labeling
+   * Models
+   * Evaluation
+   * Visualization
+
+
+Experiment data was consequently saved in folders for outputs, figures and tables.
+Example on artifacts:
+   * Feature dataset
+   * Label dataset
+   * Model predictions
+   * Metrics
+   * Figures
+   * Tables for results
+
+
+
+
+
+
+8. Results
+8.1 Overview
+
+
+This chapter presents the result from the developed analysis pipeline. The results include three main parts:
+   * Dataset and classification
+   * Model performance at event level (individual transactions) and weak labeling
+   * Evaluation with independent bot related dataset
+
+
+The results are presented with quantitative measurements, visualizations and concrete examples from the data. Because the analysis is based on public blockchain data without complete observability the results shall be interpreted as identification of sandwich-like patterns rather than actual verified attacks.
+
+
+8.2 Dataset and class imbalance
+
+
+The final event dataset contains individual transactions i.e. no predefined sequences. This dataset contains 179 128 data points after filtering to a binary classification problem (normal vs weak anomaly).
+
+
+The data is split into three parts:
+   * Training . 70% (125 389)
+   * Validation - 15% (26869)
+   * Test - 15% (26 870)
+
+
+Class distribution is highly imbalanced. The positive class (weak_anomaly) constitutes only 0.26% of the test data.
+
+
+This means that:
+   * Precision and recall become more informative than accuracy, this is because of the high imbalance, meaning classifying everything as normal class would result in a 99.74% accuracy. 
+   * Small changes in threshold can have a high impact on the result.
+   * Models need to be able to handle class imbalance.
+
+
+8.3 Model performance
+
+
+The event level  models  evaluated with precision, recall, F1 and PR-AUC. 
+
+
+         Modell                   Precision                   Recall                          F1                  PR-AUC
+Logistic Regression
+	0.0567 
+	0.7826 
+	0.1057 
+	0.0612 
+	Isolation Forest
+	0.0291 
+	0.5072 
+	0.0550 
+	0.2391 
+	Random Forest
+	0.8750 
+	0.8116 
+	0.8421 
+	0.9023 
+	XGBoost
+	0.9048 
+	0.8261 
+	0.8636 
+	0.9272 
+	Table 8.1 Performance for event level models
+
+
+Table 8.1 shows that:
+   * XGBoost reach the highest performance
+   * Random Forest is close to XGBoost
+   * Logistic regression has a high recall but low precision
+   * Isolation Forest performed worse than the supervised models.
+
+
+  
+
+        Figure 8.1 Shows Precision-Recall curve for all models
+
+
+
+
+It is observed that:
+   * XGBoost and Random Forest keep high precision even when having high recall. The high recall means that a lot of real anomalies are found and the high precision means that out of the ones the model signals as anomalies, few of them are false positives. This means that although the model finds many anomalies, many of them are true positives.
+   * Logistic Regression loses precision quickly. In the graph it is shown that as recall increases precision quickly crashes. This means that when the model is trying to find more anomalies it starts to flag a lot of data points where many of them are false positives.
+   * Isolation Forest has an unstable curve, it has no smooth form and quickly goes up and down. This means that the model consequently ranks data points. 
+
+
+8.4 Sequence models and LSTM evaluation
+Sequence based experiments were implemented to examine if temporal patterns between swaps could improve identification of sandwich-like behavior. In contrast to event-level models where every datapoint represents a single swap, the LSTM model operates on a sliding window of sequential swaps from the same pool.
+
+
+Each sequence consists of consecutive swaps ordered by block number, log_index and timestamp
+
+
+The target label for each sequence was constructed by marking whether the sequence contained at least one weak_anomaly event. This means that the LSTM models evaluate temporal structures and local transaction dynamics rather than isolated events.
+
+
+Multiple LSTM variants were implemented:
+   * Supervised LSTM classifiers
+   * LSTM Autoencoder (unsupervised reconstruction based anomaly detection)
+   * Multiple sequence lengths (L = 10, L = 20, L = 40)
+   * Ablation experiments removing rule based features and block context features
+
+
+The experiments were designed to examine:
+   * If temporal information improves detection
+   * How dependent the models are on rule based features
+   * If the models can generalize on unseen sequential patterns.
+
+
+8.4.1 LSTM v1 - supervised sequence classification
+
+
+LSTM v1 settings:
+   * Sequence length - L = 20
+   * Feature dimension - F = 12
+   * Supervised binary classification on weak labels
+
+
+The sequence target was defined as positive if at least one weak_anomaly existed inside the sequence otherwise negative.
+
+
+          Model                   Precision                   Recall                           F1                       PR-AUC
+LSTM v1 with Jared
+	0.427
+	0.580
+	0.492
+	0.613
+	LSTM v1 without Jared
+	0.416
+	0.589
+	0.488
+	0.612
+	Table 8.2 Performance for LSTM v1
+
+
+Table 8.2 shows that the supervised LSTM models performed moderate on sequence level.
+
+
+Compared to the event level tree models, LSTM achieved lower precision and lower PR-AUC. However the models still showed the ability to separate positive and negative sequence structures.
+  
+
+Figure 8.13 LSTM Precision-Recall curve 
+
+
+Figure 8.13 shows the Precision-Recall curve for the supervised LSTM models on the test dataset.
+
+
+The curve shows that precision decreases as recall increases.
+
+
+8.4.2 Effect of removing block-context features
+Experiments were conducted where block context features were removed. Features such as same_block_event_count and local_event_desnity_10
+
+
+The results show a clear decrease in precision, F1-score and PR-AUC
+
+
+This shows that local block activity and transaction density are important components for identifying anomalous temporal behavior.
+
+
+  
+
+Figure 8.14 LSTM score distribution with block context features excluded
+
+
+Figure 8.14 shows the score distributions for the LSTM model when block context features are removed.
+
+
+Compared to the full model, the separation between low-score and high-score events becomes weaker. This shows that block local activity contains important information for separating normal and anomalous transaction sequences.
+
+
+8.4.3 LSTM Autoencoder (unsupervised)
+
+
+An unsupervised LSTM autoencoder was also implemented. Instead of directly predicting labels, the autoencoder was trained to reconstruct normal sequence patterns. Anomaly scores were calculated using reconstruction error.
+
+
+          Model                   Precision                    Recall                         F1                          PR-AUC      
+LSTM AE with Jared
+	0.787
+	0.589
+	0.674
+	0.694
+	LSTM AE without Jared
+	0.640
+	0.546
+	0.589
+	0.643
+	Table 8.3 Autoencoder results
+
+
+The table shows that LSTM Autoencoder performed better than the supervised LSTM v1 model. 
+
+
+
+
+  
+
+Figure 8.15 LSTM Autoencoder Precision-Recall curve
+
+
+Figure 8.15 shows the Precision-Recall curve for the LSTM Autoencoder.
+
+
+Compared to the supervised LSTM classifier, the same curve remains higher across a larger recall interval.
+
+
+8.4.4 LSTM v2 - improved sequence pipeline
+
+
+A second generation LSTM pipeline (LSTM v2) was implemented to improve:
+   * Normalization consistency
+   * Imbalance handling
+   * Threshold selection
+   * Feature richness
+   * Evaluation robustness
+
+
+The updated pipeline introduced:
+   * Early stopping based on PR-AUC
+   * Weighted sampling
+   * Richer feature sets
+   * Multiple sequence lengths
+   * Leakage-control experiments
+
+
+The strongest configuration used:
+   * Sequence length L = 20
+   * Rich feature set F = 42
+
+
+      Configuration           Precision                     Recall                         F1                           PR-AUC        
+L20 rich full
+	0.818
+	0.932
+	0.871
+	0.939
+	L20 rich no_rule
+	0.813
+	0.821
+	0.817
+	0.854
+	L20 rich no_leakage
+	0.066
+	0.314
+	0.110
+	0.208
+	Table 8.4 LSTM v2 configurations results
+
+
+The full and no_fule configurations achieved very strong performance on weak_label classification.
+
+
+However, performance decreased considerably in the no_leakage configuration where multiple rule-related and triple-derived features were removed. At the same time, no_leakage experiment still achieved performance above random classification, which suggests that some temporal and contextual anomaly information remains even without direct rule signatures.
+  
+
+Figure 8.16 PR curve L20 rich full
+
+
+Figure 8.16 shows the Precision-Recall curve for the strongest LSTM v2 configuration.
+
+
+The curve remains high across a large recall interval, showing a strong separation between positive and negative sequence classes in the weak_label setting.
+
+
+
+
+  
+
+Figure 8.17 PR curve L20 rich no rule
+
+
+Figure 8.17 shows Precision-Recall curve after removing explicit rule based features. The performance remains relatively strong, which indicates that the model still captures broader temporal and contextual structures beyond the most explicit sandwich indicators.
+
+
+
+
+  
+
+Figure 8.18 PR curve L20 rich no_leakage
+
+
+Figure 8.18 shows the results for the strict no_leakage experiment.
+
+
+The curve decreases strongly compared to the full and no rule variants.
+
+
+8.4.5 Jared sequence evaluation
+
+
+The LSTM models were also evaluated on the independent Jared dataset.
+
+
+The score distributions show:
+   * Large concentration of low score sequences
+   * Small subgroup of high score sequences
+
+
+  
+
+Figure 8.19 LSTM score distribution on Jared sequences
+
+
+Figure 8.19 shows the score distribution for Jared related sequences using the LSTM v2 model.
+
+
+The majority of sequences receive low anomaly scores while a smaller group receives much higher scores.
+
+
+8.5 Score distributions
+
+
+Random Forest
+
+
+  
+
+  Figure 8.2 Shows score distribution for Random Forest on test data (log scale)
+
+
+
+
+  
+
+   Figure 8.3 Shows same distribution divided by class
+
+
+It is observed that:
+   * Normal class (y = 0) is highly concentrated near score = 0 (low score = low probability for anomaly)
+   * Anomalies (y = 1) occurs mostly by high score values, near 1
+   * There is some overlapping in the interval 0.2 - 0.8
+
+
+This means that the model in most cases correctly gives low scores to normal events and high scores to anomalies, but some anomalies are difficult to separate.
+
+
+XGBoost
+
+
+  
+
+  Figure 8.4 Shows score distributions for XGBoost separated by class.
+
+
+It is observed that:
+   * Normal class is highly concentrated near 0
+   * Anomalies are clearly concentrated near score = 1
+   * Overlap between classes is highly limited.
+
+This shows that both models can separate normal data and anomalies, but with different clarity.
+Random forest shows a certain spread, which means that anomalies get fairly high scores while XGBoost shows a more clear separation where anomalies in a wider range get high scores and normal data low scores.
+
+
+8.6 Feature importance
+
+
+  
+
+Figure 8.5 Shows the most important features on event level for Random Forest and XGBoost
+
+
+This shows that both models are dominated by a few features:
+   * combined_reversal_magnitude
+   * same_block_event_count
+   * block_event_count
+   * abs_tick_change
+
+
+Additionally these are also used:
+   * same_sender_before_after_flag
+   * three_event_pattern_indicator
+   * swap_size_token0/token1
+
+
+This means that price movement is the strongest signal because combined_reversal_magnitude is the most dominant feature. It measures how price moves and then reverses. This is exactly what you expect from a sandwich manipulation attack:
+   * Price is pushed up
+   * Victim trades
+   * Price moves back
+This means that the model learns the effect of the attack.
+
+
+Features such as same_block_event_count and block_event_count have high importance which means that the model uses information about how many events happen in the same block. This catches high activity, tightly packed transactions and deviating trading behavior. Features for sequential structure are also used. Features such as same_sender_before_after_flag and three_event_pattern_indicator shows that the model uses patterns in the order of transactions, for example sandwich attack pattern as described in background. Features such as swap_size_token0/token1 and attacker_vs_victim_size_ration shows that the model considers how big trades are; this is important because manipulative behavior often involves strategic sizes for trades.
+The difference between the models is that  XGBoost focuses on a fewer number of features while Random Forest spreads the importance of features. This shows that XGBoost finds more specific strong patterns while Random Forest has a broader decision logic. 
+8.7 External Evaluation: Jared-dataset
+
+
+The dataset contains 1728 events connected to the address of jaredfromsubway.eth and this is used to evaluate the models on independent data.
+
+
+  
+
+Figure 8.6 Two XGBoost models score distribution comparison between model trained with Jared data and without Jared data. 
+
+
+  
+
+Figure 8.7 Same as Figure 8.6 but XGBoost models trained without features:
+   * same_block_pattern_flag
+   * strict_sandwich_support_flag
+   * three_event_pattern_indicator
+   * same_origin_before_and_after_flag
+
+
+The figures show score distribution on log-scale for Jared-event, both with a full set of features and without rule base features. The results show that the majority of events are close to low scores (close to 0 meaning normal label) and that a much smaller group is close to 1 (high score). This means that the model does not classify all Jared-events as anomalies but actually isolates a specific group where strong deviating behavior is occurring.
+
+
+An important insight is that the same pattern remains even when we remove the rule based features and this shows that the model does not only rely on heuristic rules and instead use more general signals as price movement and block structure,
+8.8 Stability (With vs without Jared in training)
+
+
+  
+
+Figure 8.8 Diagram where every dot is a Jared-event. X axis is score from a model trained with Jared and Y axis is model trained without Jared.
+
+
+
+
+
+
+  
+
+Figure 8.9 Same as Figure 8.8 but without rule based features
+
+
+The scatter diagrams compare the score for the same data points between two models.
+X-axis: Model trained with Jared data
+Y-axis: Model trained without Jared data
+
+The diagonal line represents perfect agreement between the models.
+
+
+It is observed that the points are close to the diagonal line and that the same data points get similar scores on both models. The results show that the Spearman-corrolation is approximately 0.96 which is very high. This means that data points are almost classified identically.
+The model is stable and is not dependent on specific actors such as Jared.
+8.9 Case studies (block-level)
+8.9.1 Block level case studies
+
+
+To complete the quantitative results manual studies on block-level were made. The purpose was to research how the identified anomalies by the model actually look like in terms of transaction data and if structures can be observed in the transactional flow. The following figures show three examples from blocks from USDC/WETH pool where Jared related transactions occur together with clear changes in both price movement and gas price.
+
+
+In the figure the following is represented:
+   * Price movement/tick (Blue line)
+   * Jared related swaps (Red dot)
+   * Gas price in gwei (Green line)
+
+
+  
+
+Figure 8.10 Block 19109844
+
+
+In figure 8.10 it is shown that the block shows a clear reversal pattern in the price movement. The tick value first rises heavily and then falls shortly after in the same block. The Jared related transaction occurs at the same time as price is in the middle of this movement, which makes the block interesting from a sequential perspective.
+
+
+At the same time a clear gas price spike is observed where the gas price is heavily increased compared to the rest of the transactions in the block. Such an increase can indicate that there is some competition regarding priority of transactions in the block. The combination of rapid price movement, reversal in price, concentrated activity in the block and high gas price is an example of the structure that the models try to identify as deviating behavior.
+
+
+  
+
+Figure 8.11 Block 19111994
+
+
+In this block a similar structure where tick value first rises and soon after falls shows. The Jared related transaction occurs close to the later part of the block, just before the price movement returns downward. At the same time a clear gas price spike occurs where the gas price is considerably higher than in the rest of the block.
+
+
+This creates a pattern where multiple events occur close to each other in the block and price moves fast and gas price spikes heavily. This kind of blockstructure is relevant because multiple of the most important features of the models are connected to block activity, price reversal, sequential order and gas related anomalies.
+
+
+
+
+  
+
+Figure 8.12 Block 19036428
+
+
+The block in figure 8.12 shows a slightly different behavior where heavy change occurs early in the block.
+
+
+The tick value first falls and then recovers quickly to a higher level. Two Jared related transactions occur close to the start of the block in combination with a high gas spike. This block shows how extreme gas prices can coincide with anomalous price movements and concentrated activity in a limited area within a block.
+
+
+Interpretation of the cases:
+
+
+The analysed blocks show that the identified anomalies often coincides with:
+   * Clear reversal patterns in price
+   * Concentrated activity within a block
+   * High variations in gas price
+   * Jared related transactions near these changes.
+
+
+These studies therefore work as concrete examples for the structures that the models identify in the dataset. 
+
+
+8.9.2  Manually selected case studies
+The manually selected case studies presented earlier in this chapter illustrate several recurring characteristics observed among suspicious high-score events:
+   * rapid local price reversals
+   * concentrated same-block activity
+   * repeated actor participation
+   * elevated gas usage
+   * short sequential transaction structures
+These manually selected examples provide intuitive illustrations of the types of patterns that the models learned to associate with anomalous behavior. However, manually selected examples alone risk introducing selection bias. To address this limitation, an additional evaluation step based on automatically selected high-score events was introduced.
+8.9.3 Automatically selected high score case studies
+To reduce the risk of cherry-picking, an additional set of case studies was generated automatically from the highest-ranked Jared events produced by the Random Forest model. The cases were selected directly from the ranking output without manual filtering, using unique blocks among the top-scoring events.
+The resulting figures therefore represent model-selected anomalous cases rather than manually curated examples.
+Case 1 - Block 18981013 (USDC/WETH)
+  
+
+Figure 8.13 Block 18981013
+Figure 8.13 shows a strong downward tick movement occurring directly after a Jared-related swap. At the same time, a big gas spike can be observed compared to surrounding events in the block. The event received a Random Forest score of 0.993, making it one of the highest-ranked anomalies in the evaluation dataset.
+The combination of sudden local price movement, concentrated same-block activity and unusually elevated gas usage
+is structurally consistent with aggressive transaction ordering behavior where priority within the block may have influenced execution outcome.
+Case 2 - Block 18972568 (USDC/WETH)
+  
+
+Figure 8.14 Block 18972568
+Figure 8.14 shows a sequence where relatively small initial tick changes are followed by a sharp downward movement near the Jared-related event. A large gas spike is simultaneously visible in the lower panel.
+The temporal alignment between sudden price movement, gas escalation and Jared-related activity
+shows the type of block-local structural behavior frequently associated with MEV competition and priority transaction placement.
+The case received a Random Forest score of 0.990.
+Case 3 - Block 18993708 (USDC/WETH)
+  
+
+Figure 8.15 Block 18993708
+Figure 8.15 presents an upward movement in tick values followed by a strong reversal downward near the Jared-related swap. The gas simultaneously shows a significant increase in gas usage toward the end of the sequence. This up and down structure resembles the type of reversal behavior frequently discussed in sandwich-related MEV literature. The case received a Random Forest score of 0.981. The figure also demonstrates that the model does not rely solely on one isolated signal, but instead appears to combine:
+   * Sequential ordering
+   * Reversal structure
+   * Local gas context
+   * Concentrated activity
+when assigning high anomaly scores.
+Case 4 - Block 18987613
+  
+
+Figure 8.16 Block 18987613
+
+
+Figure 8.16 shows a clear reversal pattern where tick movement first drops and then quickly recovers upward. Multiple Jared-related swaps occur close together within the same local transaction sequence.
+A substantial gas spike is also observed during the same region of the block. The combination of:
+   * repeated actor presence
+   * reversal behavior
+   * strong gas increase
+   * dense local activity
+creates a highly structured block-local pattern.
+The event received a Random Forest score of 0.977.
+Case 5 - Block 19022878 (USDC/WETH)
+  
+
+Figure 8.17 BLock 19022878
+Figure 8.17 shows a smaller reversal-like structure where tick values first decrease and later recover upward. In contrast to previous examples, the gas behavior remains relatively stable throughout the sequence.
+This case is particularly important because it demonstrates that the model can still assign high anomaly scores even when gas spikes are not the dominant signal. The Random Forest score for the event was 0.976. The figure therefore suggests that the models are not driven exclusively by gas-related features, but instead combine multiple contextual signals simultaneously.
+8.10 Quantitative conclusion of Jared-results
+
+
+As a quantitative conclusion of the external evaluation it was analyzed how big part of Jared related events that were classified as anomalies by each model. The results show that approximately a third of all Jared events consequently get high anomaly-scores:
+
+
+Baseline trained with Jared
+	551 / 1728
+	31.89%
+	Baseline trained without Jared
+	549 / 1728
+	31.77%
+	Without rule based features trained with Jared
+	548 / 1728
+	31.71%
+	Without rule based features trained without Jared
+	535 / 1728
+	30.96%
+	Table 8.1 Jared data test results
+
+
+The difference in configuration is relatively small. 
+8.11 Holdout-experiment with highly confident reference case
+
+
+To create a strong reference material a separate dataset was made with high confidence cases consisting of  highly structured triples. These were defined as the following:
+   * Three swaps in the same block and pool
+   * Same actor before and after the middle transaction
+   * Clear price movement followed by a reversal.
+
+This resulted in:
+   * 245 triples
+   * Total 735 events
+   * 245 victims
+
+
+8.11.1 Arrangement (leakage control)
+
+
+To examine the model’s ability to generalise a holdout experiment were conducted where all high confident cases were excluded from the models training, validation and test splits. The models there therefore only trained on the remaining weak label data and then were evaluated on a separate high confident dataset. The purpose of this experiment was to minimize the risk for leakage and to examine if the models still could identify these highly structured cases even though they did not occur during the training.
+8.11.2 Result
+The table 8.2 shows the results for all models.
+
+
+Two measurements were used:
+   * Victim hit rate - Number of victims that are flagged out of total
+   * Any of triple hit rate - Number of events that are flagged out of total
+
+
+Median Percentile in the table represents if the model puts the victim event among the highest ranked events compared to all normal events that are not high confident cases.
+
+
+        Model                  Victim hit rate (tx2)        Any of triple hit rate        Median Percentile
+Random Forest
+	100%
+	64,8%
+	99.9%
+	Logistic Regression
+	100%
+	76,7%
+	100%
+	XGBoost
+	100%
+	75%
+	99,9%
+	Isolation Forest
+	7,35%
+	26,3%
+	99,1%
+	Table 8.2 Result for event level models
+8.11.3 Limitations
+
+
+The results need to be interpreted with certain caution.
+
+
+High confidence cases are constructed with a strict sandwich like structure that partially resembles the logic that is used for weak labeling. The experiment therefore demonstrated mostly that the models can generalize through a focused subgroup rather than actually working as a completely independent ground truth validation. Despite this the experiment gives important support that the supervised models actually learn structured patterns and can rank highly confident cases high even when these cases are left out of training. 
+8.11.4 Holdout experiment without rule based features
+
+
+To further examine the model’s abilities to generalize a separate holdout experiment were made where rule based features were removed from the features dataset. The purpose of this experiment was to examine if the models still could identify high confident cases without access to explicit sandwich related rules.
+
+
+The following features were excluded:
+   * same_block_pattern_flag
+   * strict_sandwich_support_flag
+   * three_event_pattern_indicator
+   * same_origin_before_after_flag
+
+
+Just like the previous experiment, high confident cases were excluded from training, validation and test split to minimize the risk for leakage.
+
+
+Table 8.3 shows the result for all models when the rule based features are excluded,
+
+
+
+
+Model                    Victim hit rate                Any of triple hit rate        Median Percentile
+Random Forest
+	100%
+	61,6%
+	99,9%
+	Logistic Regression
+	100%
+	76,6%
+	100%
+	XGBoost
+	100%
+	78,1%
+	99,9%
+	Isolation Forest
+	9,8%
+	28,8%
+	98,9%
+	Table 8.3 Result for event level models with rule based features removed
+
+
+The results show that the supervised models still identify high confident cases with high hit rate despite the rule based features being removed. All supervised models still reach 100% victim hit rate and high median percentile.
+
+
+The results show that the models also learn more general dependencies such as:
+   * Price reversals
+   * Block activity
+   * Transaction order
+   * Local trading patterns
+
+
+High hit rate occurs even when high confident cases are excluded from training and when rule based features are removed.
+8.12 Independent unlabeled evaluation
+
+
+To minimize the risk for circular reasoning a separate unlabeled evaluation of Jared dataset was conducted. In this analysis no explicit 3-swap rules were used to label the evaluation data, meaning only event level dataset were used. Instead it ranked events solely based on the models' scores. The highest ranked events were analysed manually through reconstruction of block context where the transactions were sorted after log_index in each block.
+
+
+In manual review of the 35 highest ranked events from the Random Forest model the following were classified:
+   * 32/35 as True Positive
+   * 3 / 35 as Partial
+
+
+The cases that were classified as True Positive showed clear sandwich alike structures in the block context, this includes:
+   * Price reversal
+   * Concentrated block activity
+   * Sequential structure
+   * Transactions before and after a central swap
+9. Discussion
+This chapter discusses and interprets the results presented in Chapter 8. The discussion focuses on what the results imply about sandwich-like behavior in decentralized exchanges, how the different models behaved, which structures were important in the data, and what limitations affect the interpretation of the findings. 
+9.1 Interpretation of the results
+9.1.1 Why tree models perform better?
+
+
+A clear result in the work is that the tree based models, especially Random Forest and XGBoost performed considerably better than Logistic Regression and Isolation Forest.
+
+
+An explanation to this could be that the problem contains multiple complex nonlinear connections between different types of signal, for example:
+   * Price reversals and tick change
+   * Local block activity
+   * Recurring addresses in the same block
+   * Relative trading sizes
+   * Gas related anomalies
+
+
+Sandwich-like behavior rarely occurs from one separate feature, it is about the combination of multiple features in a block and sequence.
+
+
+Tree models are especially fit for this type of problem because they can:
+   * Model non linear dependencies
+   * Handle interactions between features,
+   * Learn threshold based decision rules
+   * Separate local patterns in high dimensional data
+
+This shows clearly in the results where XGBoost reaches high precision at the same time as the number of flagged events are held relatively low. Logistic Regression reaches a high recall but much lower precision. The model flags a lot of data points to not miss positive cases, which leads to a lot of false positives. Isolation Forest performed the weakest in all experiments, especially the holdout evaluation against high confident cases. This indicates that general unsupervised outlier models have a hard time catching these types of structured and sequential patterns without guidance from weak labels.
+
+
+9.1.1.1 Sequential learning and LSTM models
+
+
+The LSTM experiments add an important perspective to the interpretation of the results because sandwich-like behavior is fundamentally sequential. In contrast to the event-level models, the LSTM models evaluate ordered windows of swaps and therefore can capture temporal dependencies between events rather than isolated transaction properties. 
+
+
+The supervised LSTM v1 models showed that temporal information contains meaningful anomaly structure, even though the performance was weaker than the strongest tree-based event models. One explanation for this difference is that event-level tree models benefit strongly from highly engineered handcrafted features that already summarize important local structures. Features such as reversal magnitude, block activity and sandwich support signals already contains much of the local context directly into each datapoint. 
+The LSTM models instead need to learn these structures from the sequence itself, which is a more difficult problem. This becomes especially challenging in highly imbalanced datasets where positive sequences are rare. 
+
+
+Despite this, the LSTM results still show that temporal sequence structure contains meaningful information connected to sandwich-like behavior. The models were able to separate positive and negative sequence classes considerably better than random classification, which indicates that anomalous behavior is not only event-local but also sequential. 
+
+
+The LSTM Autoencoder results are especially interesting. Instead of directly learning heuristic labels, the autoencoder learned reconstruction patterns for normal sequence behavior. Sequences with high reconstruction error were then classified as anomalous. 
+
+
+The stronger performance of the autoencoder compared to the supervised LSTM v1 model suggests that anomalous blockchain transaction sequences may differ structurally from normal trading behavior in ways that reconstruction-based models can capture effectively. This is important because it reduces direct dependence on weak labels and instead focuses on the structure of the sequence itself. 
+The improved LSTM v2 pipeline further strengthens this interpretation. With richer features, improved normalization, weighted sampling and better imbalance handling, the sequence models achieved substantially higher PR-AUC and F1 scores. This indicates that sequence models can become very effective when:
+   * Temporal structure is sufficiently represented
+   * Feature engineering is richer
+   * Imbalance handling is improved
+   * Leakage risks are controlled
+At the same time, the strong performance drop in the strict no_leakage experiment demonstrates that part of the predictive power still depends on structural signals related to the weak-label generation process. This shows a central challenge in blockchain anomaly detection: the difficulty of separating true behavioral learning from weak-label dependency.
+9.1.2 Does the model only learn the rules?
+
+
+A central question is if the models only reproduce the heuristic rules that are used for weak labeling, or if they actually learn a wider behavioral pattern.
+
+
+Multiple results indicates that the models does  not only rely on explicit rules:
+   * Exclusion experiment shows that performance remain stable even when clear rule based features are removed,
+   * Jared evaluation shows high stability in score ranking even when Jared events were excluded from training.
+   * Holdout experiments with high confidence cases show that the models still rank these cases highly despite them being excluded from the training data.
+
+
+This indicates that the models use more general structural signals, for example:
+   * Reversal magnitude
+   * Local block density
+   * Sequential order
+   * Concentrated activity in a block
+   * Relation between trade size and price movement
+
+
+At the same time it is important to not exaggerate the conclusion. The models are still trained on weak labels that are constructed from rules, which means that the rule definition indirectly affects what the models learn.
+
+
+The results therefore show mainly that the models can generalize in the same family, rather than verifying “true” sandwich attacks.
+
+
+9.1.2.1 No-rule and no-leakage experiments
+The no_rule and no_leakage experiments are among the most important parts of the work because they directly address the risk of label leakage and rule memorization.
+The no_rule experiments showed that both tree-based models and LSTM v2 maintained relatively strong performance even after explicit sandwich-signature features were removed. This indicates that the models still rely on broader contextual information such as:
+   * Block density
+   * Reversal behavior
+   * Timing structure
+   * Gas relationships
+   * Trade-size interactions
+This suggests that the models do not simply memorize explicit attacker-victim-attacker rules. However, the stricter no_leakage experiments resulted in a substantial performance decrease, especially for the LSTM v2 models. When multiple triple-derived and structurally related features were removed simultaneously, the classification problem became significantly more difficult. 
+This result is important because it demonstrates that a large portion of the predictive signal is still connected to the weak-label construction logic.
+The interpretation is therefore more complex:
+   * The models appear to learn broader structural relationships beyond explicit rules but the learned anomaly definition still strongly depends on the weak-label framework
+This is not necessarily a weakness of the methodology, but rather a consequence of the lack of verified ground truth in blockchain manipulation research.
+9.1.3 Importance of Jared evaluation
+
+
+The Jared dataset is especially interesting because it represents an independent subdataset connected to a well known MEV-actor. An important result is that the models don't classify all Jared events as anomalies. Instead a subgroup is isolated with high scores, about 31% of the events. 
+
+
+This shows that the model don’t work as a simple address detector, but instead actually assesses:
+   * Blockstructure
+   * Price movement
+   * Sequential patterns
+   * Local activity
+   * Context among every event
+
+
+This is further supported by the manual review of top ranked events where the majority of the cases showed clear sandwich-like structures in the block context.
+
+
+At the same time the so called “Partial” events show that high scores don’t always mean a classic 3 swap sandwich. The model seems to also be able to catch other types of MEV-related behaviors, such as;
+   * Arbitrage - Actor exploits price difference between two pools and can be seen where one or more swaps cause big tick change (price movement).
+   * Aggressive rebalancing - An actor adjusts its exposure when price moves. It can be seen by multiple seeps in the same row by the same address.
+   * Block local strategic trading - This is where actors exploit that multiple swaps happen in one block and that order can be affected by gas price. Example this can be:
+   * Backrun - Profit from price movement that someone else creates
+   * Partial sandwich-like sequences
+   * Combination of arbitrage and backrun.
+
+
+This can be seen as both a strength and a limitation depending on the purpose of the system.
+
+
+9.1.3.1 Discussion of external generalization
+One of the strongest aspects of the work is the use of external evaluation datasets and holdout experiments. The Jared evaluation is important because it introduces a partially independent behavioral environment connected to a known MEV-related actor. The models were not simply evaluated on the same weak-label distribution used during training, but also on structurally different transaction subsets.
+The high ranking stability between models trained with and without Jared data indicates that the learned anomaly structures are relatively stable. The high Spearman correlation suggests that the models prioritize similar transaction patterns even when the training composition changes. This is especially important because it reduces the risk that the models only memorize actor-specific signatures.
+The manual block-level review strengthens this interpretation further. The majority of top-ranked events contained:
+   * Strong reversals
+   * Concentrated activity
+   * Elevated gas context
+   * Repeated address structures
+   * Tightly packed transaction sequences
+These are all behaviors theoretically connected to sandwich-like MEV activity.
+At the same time, the external evaluation also reveals the ambiguity of blockchain anomaly detection. Some high-ranked cases resembled arbitrage or aggressive block-local trading rather than classic sandwich attacks.
+This demonstrates an important limitation:
+public transaction data alone often cannot fully distinguish between:
+   * Malicious manipulation
+   * Aggressive but legitimate trading
+   * Arbitrage
+   * Backrunning
+   * Liquidity rebalancing
+The models therefore appear to identify a broader family of MEV-like transaction structures rather than exclusively classic sandwich attacks.
+9.2 Feature relations and structures in the data
+
+
+The feature importance analysis from Random Forest and XGBoost shows which variables the models often use to separate weak_anomaly from normal. Although it is important to note that high feature importance does not necessarily mean that a variable alone causes a prediction. When multiple features describe the same underlying phenomenon for example price movement, reversal or block activity, then the importance can be distributed between them.
+
+To get a deeper understanding of which features the models actually react on, feature importance were complemented with further analysis:
+   * Class separation with effect size (Cohen’s d)
+   * Class conditional correlation analysis
+   * Correlation delta between classes
+   * Interaction visualization between central features.
+
+
+The purpose with these analyses is not to identify one sole feature of highest significance but rather to examine what groups of signals cooperate in sandwich-like behaviors.
+
+
+9.2.1 Which features actually separates the classes?
+
+To quantify which features that actually separates weak_anomaly from normal class separation with the help of effect size (Cohen’s d) were analysed for the most important event features.
+
+
+In contrast to normal correlation Cohen’s d shows directly how much feature distribution differs between the classes.
+
+
+  
+
+Figure 9.1 Class separation for top features
+
+
+The result show that weak_anomaly is mostly characterized by:
+   * High local activity and burst pattern
+   * Strong price movements and reversals
+   * Bigger trade sizes
+   * Strong support from sandwich related structure signals.
+
+The strongest separations were observed for:
+   * burst_activity_flag - A rough indicator that the event is in an active context. Example if there are many swaps in the block or a lot of price movement.
+   * sandwich_support_core - Summed sandwich score based on multiple signals:
+   * same_sender_before_after_flag - Same actor before after
+   * different_middle_sender_from_neighbors_flag - Victim is different actor
+   * reversal_pattern_flag - Direction flips
+   * high_block_gas_context_flag - Gas relative to blocks median >= 1.2
+   * combined_reversa_magnitude - How strong a reversal is among an event in a three event context.
+   * abs_tick_change - How much price changed from swap compared to previous swap-
+   * swap_size_token0 - Size of swap measured in token0
+   * swap_size_token1 - Size of swap measured in token1
+
+
+This is plausible. Sandwich-like behaviors often arises in environments where:
+   * A lot of swaps occur in the same block
+   * Price drive first in one direction then reverses
+   * Bigger trades are concentrated among the same frequency
+   * Multiple structural signals occur at the same time
+
+
+At the same time the figure shows that some features have a low separate effect despite them still being used by the models. For example multiple relative size measurements have low individual impact but can still contribute in combination with other signals.
+
+
+This is important because it shows that the problem can not be reduced to a sole feature or simple rule. It is rather about the combination of simultaneous signals.
+
+
+9.2.2 Structures in anomaly cases: Class conditional correlations
+
+
+A regular correlational heatmap of the whole dataset risks to be dominated by the normal class because weak_anomaly constitutes only a small fraction of the data.
+
+
+To examine how feature structures actually separate between classes a Spearman correlation were calculated for:
+   * The whole dataset
+   * normal
+   * weak_anomaly
+
+
+Also a delta heatmap was created that shows how correlations shift between classes.
+
+
+  
+
+Figure 9.2.a Spearman correlations (whole dataset)
+
+
+
+
+
+
+
+
+  
+
+Figure 9.2.b Spearman correlations (weak_anomaly)
+
+
+
+
+
+
+
+
+  
+
+Figure 9.2.c Spearman correlations (normal)
+
+
+  
+
+Figure 9.2.d Correlations delta (weak_anomaly - normal)
+
+
+
+
+The analysis shows that anomaly cases are not only characterized by high values in certain features but from changed relationships between feature groups.
+
+
+Multiple clear feature families can be identified:
+
+
+Block context and activity
+
+
+Features such as:
+   * same_block_event_count
+   * block_event_count
+   * same_sender_same_block_count
+   * same_recipent_same_block_count
+
+
+build as clear structure connected to local block activity and concentrated trading.
+In anomaly cases the connection between these variables and multiple size related features change which indicates that anomalies often arise in environments with intense and sequential activity.
+
+
+Price movement and reversal
+
+
+Features such as:
+   * combined_reversal_magnitude
+   * abs_tick_change
+
+
+show a stronger positive correlation in anomaly cases than in the normal class.
+This supports the thesis that sandwich-like behavior is closely connected to:
+   * Heavy local price changes
+   * Short term reversals
+   * Concentrates tick movements in the same block
+
+
+
+
+Trade size and size relationships
+
+
+Features related to:
+   * swap_size_token0
+   * swap_size_token1
+   * relative_trade_size
+   * attacker_vs_victim_size_ratio
+
+
+shows changed correlations in anomaly cases. What is especially interesting is that certain negative correlations are enhanced in weak_anomaly, which means that the trading sizes in these sequences behave differently than in normal trading.
+
+
+This indicates that anomalies not only is about big trades, but rather about specific combinations of:
+   * trade size
+   * order
+   * block context
+   * reversal dynamic
+
+
+
+
+Structural sandwich signals
+
+
+Features such as:
+   * sandwich_support_score
+   * three_event_pattern_indicator
+shows clear changes in their relations to other feature groups.
+
+
+This shows that the sandwich-like cases don't represent isolated data points but rather whole structural patterns where multiple signals cooperate simultaneously.
+
+
+The Delta-heatmap is especially important because it shows that anomalies are not only external versions of normal trading. Instead the relationship between features are changed, This supports the thesis that sandwich-like behaviors represent a  separate structural order rather than just unusually high values.
+
+
+9.2.3 Interactions between features
+
+
+To further illustrate why tree models work better than linear models, interactions between central features were analyzed.
+
+
+  
+
+Figure 9.3 Reversal magnitude vs gas context with down sampled normal to display anomalies (red dots = anomaly, grey = normal)
+
+
+The figure shows the relations between:
+   * combined_reversal_magnitude
+   * gas_price_relative_to_block_median
+
+
+Every dot represents an event in the dataset.
+
+
+X-axis: How strong a reversal is around an event in a three event window.
+Y-axis: Events gasprice divided by median in the same block, 1.0 meaning median and 2.0 meaning twice as high as median.
+
+
+Analysis shows that anomaly cases tend to be concentrated in regions where:
+   * Reversal magnitude is high
+   * Gas deviations relative to block median is increased
+
+
+There is no simple limit that separates anomalies from normal cases. Instead the models seem to need a combination of multiple signals to create a robust anomaly detection.
+
+
+For example:
+   * High reversal alone can be insufficient
+   * High gas alone can be insufficient
+   * But combination of reversal + gas + block activity gives a strong signal
+
+
+This explains why tree models work better than Logistic Regression:
+   * Logistic Regression tries to approximate the problem with a global linear threshold.
+   * Random Forest and XGBoost can instead create local decision rules based on feature interactions
+
+
+This is especially important in blockchain data where anomalies arise as sequential and context dependent patterns rather than simple statistical outliers.
+9.3 Challenges of Anomay detection in Uniswap V3
+Detecting suspicious or sandwich-like behavior in Uniswap V3 is fundamentally difficult because price movement in the protocol is highly dependent on local liquidity conditions rather than only transaction size. Unlike traditional financial order books, where market depth is observable, the effective liquidity in Uniswap V3 changes dynamically depending on where trading occurs within the active liquidity ranges. This creates a more complex environment for anomaly detection and makes the interpretation of transaction behavior significantly more challenging.
+One of the most important differences between Uniswap V3 and earlier automated market maker models is the introduction of concentrated liquidity. In earlier AMM designs such as Uniswap V2, liquidity is distributed evenly across the entire price curve. In Uniswap V3, liquidity providers can allocate capital only within selected price intervals. This means that large portions of liquidity may become inactive outside the current trading range, while active liquidity can vary a lot between nearby price levels.
+As a consequence, the same trade size may produce very different price movements depending on the local liquidity state at the moment of execution. A relatively small trade may create a large tick movement if liquidity is thin, while a significantly larger trade may have limited market impact in regions with high active liquidity. Price behavior therefore becomes nonlinear and highly state-dependent.
+These properties create additional complexity for anomaly detection models. Abnormal price movement cannot always be interpreted independently from a liquidity context, because strong reversals or sudden tick changes may sometimes emerge naturally from temporary liquidity conditions rather than manipulative intent. Similarly, high gas usage or dense same-block activity may occur during periods of increased market volatility without necessarily indicating malicious behavior.
+The sequential nature of MEV-related activity further complicates the problem. The meaning of a transaction often depends not only on the transaction itself, but also on its surrounding block context and its relative ordering compared to neighboring swaps. The same observable transaction pattern may appear suspicious in one liquidity context while appearing normal in another. This makes purely rule-based detection difficult and motivates the use of machine learning models capable of combining multiple contextual signals simultaneously.
+The results of this work indicate that features related to reversal behavior, local block activity, transaction ordering and gas context together contain meaningful information about anomalous trading patterns. However, the experiments also demonstrate that these patterns are probabilistic rather than deterministic. The models identify statistically and structurally unusual behavior, but the detected events cannot be interpreted as definitive proof of manipulation.
+From a scientific perspective, these findings suggest that anomaly detection in Uniswap V3 should not be viewed solely as a transaction classification problem. Instead, it is more appropriately understood as a dynamic state-dependent modeling problem where market structure, liquidity conditions, temporal ordering and local behavioral context interact simultaneously. This also helps explain why sequence-aware and context-aware models, such as tree ensembles and LSTM-based approaches, achieved stronger performance than simpler linear or generic unsupervised methods in the experiments.
+
+
+10. Conclusions
+The purpose of this work was to investigate whether sandwich-like behavior in decentralized exchanges can be identified through analysis of public blockchain transaction data from Uniswap V3. The work focused on combining heuristic weak labeling with machine learning in order to analyze sequential transaction behavior, local price dynamics and block-level context associated with potentially manipulative trading patterns.
+The work was guided by four research questions:
+   * How can sandwich-like patterns be defined from observed transaction sequences?
+   * To what extent can machine learning generalize beyond rule based signals?
+   * What features in the data are most relevant to identify such behavior?
+   * How does the performance differ between machine learning models in this context? 
+The results indicate that sandwich-like patterns can be identified using transaction ordering, address behavior and block-local market structure. Multiple experiments showed that anomalous cases frequently contain:
+   * Repeated addresses before and after a middle transaction,
+   * Strong local reversal patterns,
+   * Concentrated same-block activity,
+   * Increased gas context,
+   * and tightly packed transaction sequences.
+The manual block-level reviews further supported that many high-ranked events displayed structures consistent with known sandwich-like behavior. At the same time, the work also demonstrates an important limitation of blockchain-based analysis: public transaction data alone cannot conclusively prove intent. The identified cases should therefore be interpreted as structurally suspicious or sandwich-like behavioral patterns rather than verified attacks.
+The heuristic rule-based methods proved effective for constructing weak labels and identifying highly structured candidate cases. The holdout experiments showed that the rule logic captures realistic transaction structures associated with sandwich-like behavior. However, the results also revealed important limitations of purely rule-based systems. Many realistic MEV-related behaviors appear more complex than strict three-event patterns, and predictive performance decreases when rule-connected features are removed. This suggests that heuristic rules are useful as:
+   * Baseline methods,
+   * Initial filtering systems,
+   * and weak-label generators,
+but less effective as standalone general anomaly detectors.
+The experiments further showed that machine learning substantially improves detection capability compared to direct heuristic filtering alone. In particular, the supervised tree-based models, Random Forest and XGBoost, achieved the strongest overall performance across:
+   * PR-AUC,
+   * Precision,
+   * F1-score,
+   * and ranking stability.
+The models were able to combine multiple weak signals simultaneously, including:
+   * Reversal behavior,
+   * Gas context,
+   * Transaction ordering,
+   * Local activity,
+   * Trade-size relationships,
+   * and sequential structure.
+This allowed the models to detect more complex and context-dependent behaviors than static rule systems alone. At the same time, the stricter no_leakage experiments demonstrated that part of the predictive power still depends on structures connected to the weak-label generation process. This highlights one of the central challenges in blockchain anomaly detection where verified ground truth is limited.
+Feature importance analysis consistently showed that the most informative variables were connected to:
+   * Price reversals,
+   * Block-local activity,
+   * Transaction density,
+   * Sequential ordering,
+   * and same-block structural relationships.
+Features such as:
+   * combined_reversal_magnitude,
+   * abs_tick_change,
+   * same_block_event_count,
+   * and sandwich_support_score
+were repeatedly among the strongest predictors. The results therefore suggest that sandwich-like behavior is not characterized by isolated outlier events, but rather by structural and contextual transaction patterns inside local market environments.
+The comparison between different model families also produced clear results. Tree-based supervised models performed best overall, while Logistic Regression struggled with the nonlinear and context-dependent structure of the data. Isolation Forest consistently achieved the weakest results, indicating that generic unsupervised outlier detection is insufficient for this type of structured blockchain behavior.
+The sequence-based LSTM models demonstrated that temporal transaction information contains meaningful anomaly structure. Although the event-level tree-based models remained strongest overall, the improved LSTM v2 pipeline achieved much stronger performance than the initial sequence models and showed that temporal sequence modeling is a promising direction for future research. In particular, the LSTM Autoencoder experiments suggest that reconstruction-based anomaly detection may capture wider structural deviations in transaction sequences without relying entirely on explicit labels.
+The external evaluation on the Jared-related dataset further strengthened the robustness of the work. The models identified stable   subgroups of highly anomalous events even when:
+   * Jared-related data were excluded from training,
+   * and explicit rule-based features were removed.
+The holdout experiments and manual block-level reviews showed that the models consistently ranked realistic and strongly structured MEV-like transaction patterns highly, including in unlabeled evaluation settings. This suggests that the models learned wider structural relationships rather than only reproducing explicit heuristic rules.
+At the same time, the work contains several important limitations. Public blockchain data lacks:
+   * Mempool visibility,
+   * Private order flow,
+   * Validator-side ordering information,
+   * and direct insight into trader intent.
+Furthermore, the weak labels are based on heuristic approximations rather than verified ground truth. The results should therefore not be interpreted as definitive evidence of market manipulation, but rather as identification of statistically and structurally anomalous transaction behavior consistent with known sandwich-like activity.
+Despite these limitations, the work demonstrates that it is possible to construct a reproducible pipeline for analysis of anomalous behavior in decentralized financial markets. The results indicate that blockchain analysis combined with machine learning can identify complex transaction structures that would otherwise be difficult to detect manually.
+The work contributes to research in blockchain analysis and decentralized market surveillance by:
+   * Demonstrating how block-local and sequential transaction features can be used to identify sandwich-like behavior in Uniswap V3,
+   * Evaluating both event-level and sequence-level anomaly detection approaches,
+   * Investigating leakage-control and weak-supervision challenges,
+   * and showing how external evaluation can be performed even when verified ground truth is limited or unavailable.
+
+
+11. Future Work
+
+
+This work has investigated how sandwich-like patterns can be identified in public transaction data from Uniswap V3 with the help of rule based methods and machine learning. The result shows that it is possible to identify indications of deviating behavior, but the method is affected by multiple limitations. This opens up for a number of different extensions for future work.
+
+
+A central improvement would be access to more complete data. In this work only public blockchain data is used, which means that private transactions and mempool information is not included. Future studies could integrate data from for example mempool or MEV-related infrastructures to get a more complete picture of transactional flows and improve the identification of sandwich attacks.
+
+
+There is potential to further develop more advanced methods for labeling. In this work weak labels based on heuristic rules are used which means that models are trained on approximations of real behavior. Future work could research alternate methods, such as semi-supervised learning or active learning to improve the quality of labeling and improve the performance of the model.
+
+
+Another possible extension is to use more advanced temporal models, for example neural networks fitted for temporal data. Because sandwich attacks are sequential such models can catch more complex patterns than the methods that are used in this work.
+
+
+There is also the possibility to broaden the analysis to different types of manipulation in decentralized exchanges, such as font-running, wash trading or flash loan attacks. By generalizing the method, future work could contribute to more extensive systems for anomaly detection in DeFi environments.
+
+
+The work also could be extended to real time analysis. In this work historical data is used, but in practical implementations it is often in interest to identify suspect behavior in real time.
+
+
+Finally there is also a need to evaluate the methods generalizability. In this work the focus is on Uniswap V3 and a limited dataset. Future work can examine how the method performs on other DEX platforms or under different market conditions.
+
+
+In summary this work shows that there is good potential in combining rule based methods with machine learning for analysis in decentralized markets. At the same time multiple questions about data access, labeling and choice of models remain which makes the area fit for continuous research.
+
+
+
+
+
+
+
+
+12. References
+
+
+
+
+[1]
+A. Hayes, “Blockchain Facts: What Is It, How It Works, and How It Can Be Used,” Investopedia, Mar. 24, 2025. https://www.investopedia.com/terms/b/blockchain.asp 
+
+
+[2]
+O. Europa, “Ethereum Validator Setup, Rewards and Risks,” OKX Europa, Oct. 31, 2025. https://www.okx.com/sv/learn/ethereum/what-is-ethereum-validator.
+
+
+[3]
+R. Sharma, “Decentralized finance (Defi) Definition and Use Cases,” Investopedia, 2024. https://www.investopedia.com/decentralized-finance-defi-5113835 
+
+
+[4]
+K. Montevirgen, “Britannica Money,” www.britannica.com. https://www.britannica.com/money/decentralized-finance-defi 
+
+
+[5]
+“What is a DEX?,” www.coinbase.com. https://www.coinbase.com/learn/crypto-basics/what-is-a-dex 
+
+
+[6]
+“Uniswap v2 Overview,” Uniswap Protocol, Mar. 23, 2020. https://blog.uniswap.org/uniswap-v2 
+
+
+[7]
+“What is an Automated Market Maker?,” Uniswap Labs, May 2025. https://blog.uniswap.org/what-is-an-automated-market-maker 
+
+
+[8]
+“What is an Automated Market Maker?,” Uniswap Labs, May 2025. https://blog.uniswap.org/what-is-an-automated-market-maker 
+
+
+[9]
+“A Primer on Uniswap v3 Math: As Easy As 1, 2, v3,” Uniswap Labs, 2023. https://blog.uniswap.org/uniswap-v3-math-primer 
+
+
+[10]
+ethereum.org, “Transactions,” ethereum.org, 2025. https://ethereum.org/developers/docs/transactions/ 
+
+
+[11]
+ethereum.org, “Blocks,” ethereum.org, 2025. https://ethereum.org/developers/docs/blocks/ 
+
+
+[12]
+ethereum.org, “Maximal extractable value (MEV),” ethereum.org, 2025. https://ethereum.org/developers/docs/mev/ 
+
+
+[13]
+“What are MEV Sandwiching Bots? - Automated DeFi Strategies,” Blocknative.com, 2023. https://www.blocknative.com/blog/what-is-mev-sandwiching 
+
+
+[14]
+“Detecting Anomalies in Blockchain Transactions using Machine Learning Classifiers and Explainability Analysis,” Arxiv.org, 2024. https://arxiv.org/html/2401.03530v1 
+
+
+
+
+[15]
+GeeksforGeeks, “Logistic Regression in Machine Learning,” GeeksforGeeks, May 09, 2017. https://www.geeksforgeeks.org/machine-learning/understanding-logistic-regression/ 
+
+
+[16]
+GeeksforGeeks, “Random Forest Algorithm in Machine Learning,” GeeksforGeeks, Feb. 22, 2024. https://www.geeksforgeeks.org/machine-learning/random-forest-algorithm-in-machine-learning/ 
+
+
+[17]
+Fraidoon Omarzai, “XGBoost Classification In Depth - Fraidoon Omarzai - Medium,” Medium, Jul. 21, 2024. https://medium.com/@fraidoonomarzai99/xgboost-classification-in-depth-979f11ef4bf9 
+
+
+[18]
+GeeksforGeeks, “What is Isolation Forest?,” GeeksforGeeks, Apr. 02, 2024. https://www.geeksforgeeks.org/machine-learning/what-is-isolation-forest/ 
+
+
+[19]
+GeeksforGeeks, “What is Imbalanced Dataset,” GeeksforGeeks, Sep. 13, 2024. https://www.geeksforgeeks.org/machine-learning/what-is-imbalanced-dataset/ 
+
+
+[20]
+Ultralytics, “Recall - Learn what Recall is in machine learning, why it matters, and how it ensures AI models capture critical positive instances effectively.,” Ultralytics.com, 2025. https://www.ultralytics.com/glossary/recall 
+
+
+[21]
+GeeksforGeeks, “F1 Score in Machine Learning,” GeeksforGeeks, Dec. 27, 2023. https://www.geeksforgeeks.org/machine-learning/f1-score-in-machine-learning/ 
+
+
+[22]
+“Ultimate Guide to PR-AUC,” Coralogix, 2025. https://coralogix.com/ai-blog/ultimate-guide-to-pr-auc-calculations-uses-and-limitations/ 
+
+
+[23] 
+GeeksforGeeks, “Decision Threshold In Machine Learning,” GeeksforGeeks, Sep. 04, 2020. https://www.geeksforgeeks.org/machine-learning/decision-threshold-in-machine-learning/ 
+
+
+[24]
+Constantine Gurnov, “Watchtower: Automated Anomaly Detection at Scale - Sift Engineering Blog,” Sift Engineering Blog, Mar. 03, 2020. https://engineering.sift.com/watchtower-automated-anomaly-detection-at-scale/ 
+
+
+[25]
+GeeksforGeeks, “Supervised and Unsupervised learning,” GeeksforGeeks, Oct. 2017. https://www.geeksforgeeks.org/machine-learning/supervised-unsupervised-learning/ 
+
+
+[26]
+Laerd Statistics, “Spearman’s Rank-Order Correlation,” Laerd Statistics, 2018. https://statistics.laerd.com/statistical-guides/spearmans-rank-order-correlation-statistical-guide.php 
+
+
+[27]
+J. Frost, “Cohens D: Definition, Using & Examples,” Statistics By Jim, 2022. https://statisticsbyjim.com/basics/cohens-d/ 
+
+
+[28]
+Pvldb Reference Format et al., “Snorkel: Rapid Training Data Creation with Weak Supervision,” PVLDB, vol. 11, no. 3, p. xxxx-yyyy, 2017, doi: https://doi.org/10.14778/3157794.3157797. 
+
+
+[29]
+“Understanding LSTM Networks -- colah’s blog,” Github.io, 2015. https://colah.github.io/posts/2015-08-Understanding-LSTMs 
+
+
+[30]
+M. Sakurada and T. Yairi, “Anomaly Detection Using Autoencoders with Nonlinear Dimensionality Reduction,” Proceedings of the MLSDA 2014 2nd Workshop on Machine Learning for Sensory Data Analysis - MLSDA’14, 2014, doi: https://doi.org/10.1145/2689746.2689747 .
+
+
+[31]
+S. Jiang, J. Chen, J. Li, Z. Liu, and Y. Li, “ARMM: Sandwich-Attack Resilient Automated Market Maker,” IEEE Transactions on Services Computing, vol. 18, no. 5, pp. 2632–2645, Sep. 2025, doi: https://doi.org/10.1109/tsc.2024.3376195. 
+
+
+[32]
+M. Naviglio, F. Tarantelli, and F. Lillo, “Price manipulation schemes of new crypto-tokens in decentralized exchanges,” EPJ Data Science, vol. 15, no. 1, Dec. 2025, doi: https://doi.org/10.1140/epjds/s13688-025-00602-5. 
+
+
+[33]
+Y. Liang, X. Wang, Y. C. Wu, H. Fu, and M. Zhou, “A Study on Blockchain Sandwich Attack Strategies Based on Mechanism Design Game Theory,” Electronics, vol. 12, no. 21, p. 4417, Jan. 2023, doi: https://doi.org/10.3390/electronics12214417. 
+
+
+[34]
+Y. Li, N. Wu, D. Tang, and X. Zhang, “Research on Anomaly Detection Algorithm System for Financial Transaction Data Processing Based on Deep Learning,” 2025 IEEE 3rd International Conference on Image Processing and Computer Applications (ICIPCA), pp. 1562–1566, Jun. 2025, doi: https://doi.org/10.1109/icipca65645.2025.11138739. 
+
+
+[35]
+A. C. Sen, P. Kumar, M. J. Dave, H. R. Parmar, A. Kalra, and M. Goyal, “Machine Learning-Driven Anomaly Detection in Blockchain Transactions for High-Security Digital Banking,” Communications in Computer and Information Science, pp. 143–157, 2025, doi: https://doi.org/10.1007/978-3-031-86069-0_12. 
+
+
+[36]
+PyTorch Contributors, “BCEWithLogitsLoss,” Pytorch.org, 2023. https://docs.pytorch.org/docs/2.12/generated/torch.nn.BCEWithLogitsLoss.html 
+
+
+[37]
+C. Hughes, “Demystifying PyTorch’s WeightedRandomSampler by example,” Medium, Aug. 30, 2022. https://medium.com/data-science/demystifying-pytorchs-weightedrandomsampler-by-example-a68aceccb452 
+
+
+[38]
+CoinMarketCap, “EigenPhi: Performance Appraisal of Jaredfromsubway.eth,” CoinMarketCap Academy, May 24, 2023. https://coinmarketcap.com/academy/article/eigenphi-performance-appraisal-of-jaredfromsubway.eth 
+
+
+A. Appendices
+A.1 Feature catalog
+This appendix documents all features that occur in the two central datasets in the project.
+Event-dataset (one row per swap/event)
+Sequence-dataset (one for per window of sequences)
+Feature dictionary:
+Event dataset:
+swap_id - Unique ID for swap event | Primary key for joins between features and labels
+pool_address - Address for Uniswap V3 pool | Group key for per pool features and sequences
+transaction_hash - Transactionhash | Traceability to transactions and block cases
+log_index - Order for log in block | Used to establish correct event order in block
+block_number - Block number | Block context central for MEV pattern
+timestamp - Block timestamp | Used for timing features such as interarrival and density
+sender_address - Sender for swap | Used for address repetition and patterns before/after
+recipient_address - Recipient for swap | Router signal
+origin_address - Origin of transaction | Can confirm same actor over multiple swaps
+amount0 - token0 flow | Fundamental for size and direction
+amount1 - token1 flow | Fundamental for size and direction
+sqrt_price_x96_raw - sqrtPriceX96 in raw format | Used for price features
+tick - Tick after swap | Used for tick reversal
+gas_price_raw - Gas price in Wei (raw) | Fundamental for gas normalization
+token1/token0_id - Token0 contract address | Context
+token1/token0_symbol - Token0 symbol | tabels and figures
+token1/token0_decimals - Token0 decimals | Normalization
+fee_tier - Fee level of the pool | Fee level affects MEV and liquidity
+datetime_utc - Timestamp as UTC | Used for temporal analysis
+date_utc - UTC date | For per day aggregation
+abs_amount0 - absolute value of amount0 | Size independent of direction
+trade_direction_token0 - Direction for token0 (in or out) | Used in analysis
+abs_amount1 - Absolute value of amount1 | Size independent of direction
+trade_direction_token1 - Direction of token1 (in or out) | Used in analysis
+gas_price_gwei - Gas price in gwei | Comparable gas level
+swap_size_token1/token0 - Size in token1/token0 | Used for trade magnitude
+trade_direction - Direction of trade
+tick_change_from_previous - Tick-difference from previous swap in pool | Volatility
+abs_tick_change - Absolute tick difference | Price movement independent of direction
+sqrt_price_x96 - Numerical sqrtPriceX96
+sqrt_price_change_from_previous - Difference in sqrtPriceX96 | Price impact measured continuously 
+relative_sqrt_price_change - Relative change in sqrtPriceX96 | Scale independent price movement
+time_since_last_swap_in_pool - Time since last swap in pool | Burst activity / MEV timing
+interarrival_seconds - Interarrival | Used for modeling
+same_block_event_count - Number of swaps in pool and block | Block local intensity
+same_block_pattern_flag - Are there more than 1 swap in the block? | Easy blockstructure signal
+local_event_density_10 - Local event concentration (events/second) | Indicates burst
+gas_price_local_mean_20 - Local mean gas for 20 events | Normalizes gas to local context
+gas_price_local_median-20 - Local median gas for 20 events | More robust normalization
+gas_price_relative_to_local_mean - Gas relative to local mean | Gas premium signal
+gas_spike_flag - Gas spike flag | Indicates competition for order
+same_sender_recent_count_20 - Sender repetition (latest 20) | Bot like repetition
+same_recipent_recent_count_20 - Recipient repetition (latest 20) 
+sender_recipient_pair_recent_count_20 - Repetition of sender -> recipient 
+same_sender_same_block_count - Number of events of the same sender in a block | Multiple attack swaps in a block
+
+
+same_recipient_same_block_count - Number of events of same recipient in block
+
+
+burst_activity_flag - Flag for “active”. Example: same_block_event_count > 2 | Catches high activity
+
+
+position_in_block - Position in block, pool | Context early/late swap in block
+
+
+block_event_count - Number of events in pool, block
+
+
+prev_sender_address - Sender for the previous  event | Help for three event structure
+
+
+next_sender_address - Sender for the next event| Help for three event structure
+
+
+prev_origin_address - Origin for previous event | Complements “same actor”
+
+
+next_origin_address - Origin for next event | Complements “same actor”
+
+
+prev_tick - Tick for previous event | Reversal/structure
+
+
+next_tick - Tick for next event | Reversal/structure
+
+
+prev_swap_size_token0/token1 - Previous swap size token0/token1 | Size relationships
+
+
+next_swap_size_token0/token1 - Next swap size token0/token1 | Size relationships
+
+
+prev_gas_price_gwei - Previous gas | Help for neighbor gas
+
+
+next_gas_price_gwei - Next gas | Help for neighbor gas
+
+
+same_sender_before_after_flag - Prev sender == next sender | Core signal for sandwich
+
+
+different_middle_sender_from_neighbors_flag - Middle sender != prev and != next | Core signal for BOT-VICTIM-BOT
+
+
+same_origin_before_after_flag - Prev origin == next origin | Extra support
+
+
+tick_change_before - Tick movement before current event | Used for reversal structure analysis
+
+
+tick_change_after - Tick movement after current event | Used for reversal structure analysis
+
+
+reversal_pattern_flag - Indicates reversal pattern in price movement | Detects push-and-revert structures
+
+
+three_event_pattern_indicator - Three-event structural pattern indicator | Strict sandwich-like candidate
+
+
+swap_size_token0_relative_to_block_mean - Token0 trade size relative to block average | Detects unusually large trades
+
+
+swap_size_token1_relative_to_block_mean - Token1 trade size relative to block average | Detects unusually large trades
+
+
+abs_tick_change_before - Absolute tick movement before event | Magnitude of first price movement
+
+
+abs_tick_change_after - Absolute tick movement after event | Magnitude of second price movement
+
+
+combined_reversal_magnitude - Combined reversal strength | Measures total push-and-revert movement
+
+
+attacker_average_size_token0 - Average neighboring token0 size | Approximation of attacker-side trade size
+
+
+relative_trade_size_token0 - Current trade size relative to neighboring trades | Relative trade-size signal
+
+
+attacker_vs_victim_size_ratio_token0 - Neighboring trade size relative to current trade | Trade-size comparison
+
+
+attacker_average_size_token1 - Average neighboring token1 size | Approximation of attacker-side trade size
+
+
+relative_trade_size_token1 - Current trade size relative to neighboring trades | Relative trade-size signal
+
+
+attacker_vs_victim_size_ratio_token1 - Neighboring trade size relative to current trade | Trade-size comparison
+
+
+gas_price_relative_to_block_mean - Gas relative to block mean | Detects gas premium inside block
+
+
+gas_price_relative_to_block_median - Gas relative to block median | Robust block-level gas premium
+
+
+gas_price_relative_to_neighbors_mean - Gas relative to neighboring swaps | Local gas comparison
+
+
+high_block_gas_context_flag - High gas-context indicator | Detects elevated gas environments
+
+
+high_relative_trade_size_flag - Large relative trade-size indicator | Detects unusually large trade relationships
+
+
+strict_sandwich_support_flag - Strict sandwich-support indicator | Strong rule-based sandwich signal
+
+
+sandwich_support_score - Aggregated sandwich support score | Combined structural support metric
+
+
+
+
+Sequence dataset:
+sequence_id - Unique identifier for sequence window | Primary key for sequence-level analysis
+pool_address - Uniswap V3 pool address for sequence | Ensures sequences stay within same market context
+sequence_start_block - Block number of first event in sequence | Temporal context for sequence
+sequence_end_block - Block number of last event in sequence | Temporal context for sequence
+sequence_start_timestamp - Timestamp of first event in sequence | Used for temporal ordering
+sequence_end_timestamp - Timestamp of last event in sequence | Used for temporal ordering
+sequence_length - Number of swaps in sequence window | Fixed-size sliding window length
+sequence_duration_seconds - Total duration of sequence | Captures burst-like behavior
+sequence_event_count - Number of events in sequence | Sequence activity level
+contains_weak_anomaly - Indicates if sequence contains weak anomaly event | Target variable for sequence classification
+weak_anomaly_count - Number of weak anomaly events in sequence | Measures anomaly concentration
+sequence_mean_gas_price - Mean gas price across sequence | Sequence-level gas context
+sequence_max_gas_price - Maximum gas price in sequence | Detects extreme gas competition
+sequence_gas_price_std - Standard deviation of gas prices | Measures gas volatility
+sequence_mean_abs_tick_change - Mean absolute tick movement | Average sequence volatility
+sequence_max_abs_tick_change - Maximum absolute tick movement | Detects extreme price movement
+sequence_tick_volatility - Standard deviation of tick changes | Measures sequence instability
+sequence_total_volume_token0 - Total token0 volume in sequence | Sequence trade magnitude
+sequence_total_volume_token1 - Total token1 volume in sequence | Sequence trade magnitude
+sequence_mean_interarrival - Mean interarrival time between swaps | Measures temporal density
+sequence_min_interarrival - Minimum interarrival time | Detects burst activity
+sequence_density_score - Event density within sequence | Measures concentrated activity
+sequence_same_sender_ratio - Fraction of repeated senders | Detects repeated actor behavior
+sequence_same_recipient_ratio - Fraction of repeated recipients | Detects repeated routing patterns
+sequence_same_origin_ratio - Fraction of repeated origins | Detects repeated actor origin
+sequence_reversal_count - Number of reversal structures in sequence | Measures repeated push-and-revert patterns
+sequence_gas_spike_count - Number of gas spikes in sequence | Measures gas competition intensity
+sequence_burst_activity_count - Number of burst activity flags | Detects highly active regions
+sequence_sandwich_support_mean - Mean sandwich support score | Average structural sandwich-likeness
+sequence_sandwich_support_max - Maximum sandwich support score | Strongest local sandwich signal
+sequence_position_entropy - Distribution of event positions in block | Measures structural concentration
+sequence_unique_sender_count - Number of unique senders | Measures actor diversity
+sequence_unique_recipient_count - Number of unique recipients | Measures routing diversity
+sequence_unique_origin_count - Number of unique origins | Measures actor diversity
+
+
+sequence_block_span - Number of unique blocks covered | Indicates local vs distributed structure
+sequence_pool_activity_mean - Average pool activity across sequence | Local market activity context 
+A.2 Feature groups
+Features were organized into multiple groups:
+   * Price movement features
+   * Timing and density features
+   * Gas related features
+   * Address and repetition features
+   * Block and sequence features
+   * Sandwich supportive structure features
+
+
+
+
+________________
